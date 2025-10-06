@@ -12,3 +12,7 @@ Umožňuje pridávať príspevky, komentovať, čítať články a využívať A
 ## Spustenie
 Backend: `uvicorn app.main:app --reload`  
 Frontend: `npm run dev`
+
+
+## Školiteľ
+- Mgr. Kristián Kolčák
