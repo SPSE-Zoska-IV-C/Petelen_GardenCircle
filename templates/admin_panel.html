@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Admin Panel{% endblock %}
+{% block content %}
+<section class="card full">
+  <header class="section-header">
+    <h2>Admin</h2>
+    <p class="muted">Pridaj článok, novinku alebo obrázok k príspevku</p>
+  </header>
+
+  <h3>Upload obrázka</h3>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="image" accept="image/*">
+    <button class="btn">Nahrať</button>
+  </form>
+  <p id="uploadResult" class="muted"></p>
+
+  <h3>Nový článok</h3>
+  <form method="post" action="/admin/articles">
+    <input name="title" placeholder="Názov" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0;margin-bottom:.5rem">
+    <textarea name="content" rows="4" placeholder="Obsah" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0"></textarea>
+    <input name="image_path" id="articleImage" placeholder="Cesta k obrázku (z uploadu)">
+    <div style="margin-top:.5rem"><button class="btn primary">Pridať článok</button></div>
+  </form>
+
+  <h3>Nová novinka</h3>
+  <form method="post" action="/admin/news">
+    <input name="title" placeholder="Názov" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0;margin-bottom:.5rem">
+    <textarea name="content" rows="3" placeholder="Krátky text" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0"></textarea>
+    <input name="image_path" id="newsImage" placeholder="Cesta k obrázku (z uploadu)">
+    <div style="margin-top:.5rem"><button class="btn primary">Pridať novinku</button></div>
+  </form>
+
+  <h3>Pridať obrázok k príspevku</h3>
+  <form method="post" action="/admin/post-image">
+    <input name="post_id" placeholder="ID príspevku">
+    <input name="image_path" id="postImage" placeholder="Cesta k obrázku (z uploadu)">
+    <button class="btn">Pridať obrázok</button>
+  </form>
+
+</section>
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const fd = new FormData(form);
+  const res = await fetch('/admin/upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  document.getElementById('uploadResult').textContent = data.path || 'Chyba uploadu';
+});
+</script>
+{% endblock %}
+
+

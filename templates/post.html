@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}GardenCircle — príspevok{% endblock %}
+{% block body_class %}bg-leaf{% endblock %}
+{% block content %}
+    <section class="card full">
+      <header class="section-header">
+        <h2>Príspevok</h2>
+      </header>
+      <article class="post-card">
+        <div class="post-header">
+          <div class="meta">
+            <strong class="author">{{ post.author }}</strong>
+            <time class="time">{{ post.created_at }}</time>
+          </div>
+        </div>
+        <p class="post-content">{{ post.content }}</p>
+      </article>
+    </section>
+
+    <section class="card full">
+      <header class="section-header">
+        <h3>Komentáre</h3>
+      </header>
+      <ul class="comment-list">
+        {% for c in comments %}
+          <li>
+            <strong>{{ c.author }}</strong> • <small class="muted">{{ c.created_at }}</small>
+            <div>{{ c.text }}</div>
+          </li>
+        {% else %}
+          <li class="muted">Zatiaľ žiadne komentáre.</li>
+        {% endfor %}
+      </ul>
+
+      <form class="comment-form" method="post" action="{{ url_for('add_comment', post_id=post.id) }}">
+        <input type="text" name="author" placeholder="Tvoje meno (nepovinné)">
+        <input type="text" name="text" placeholder="Napíš komentár" required>
+        <button class="btn small">Odoslať</button>
+      </form>
+    </section>
+{% endblock %}
+
+

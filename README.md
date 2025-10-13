@@ -1,18 +1,43 @@
 # 🌱 GardenCircle
 
-GardenCircle je webová aplikácia pre milovníkov prírody a rastlín.  
-Umožňuje pridávať príspevky, komentovať, čítať články a využívať AI chatbota na rady o rastlinách.  
+Jednoduchá webová aplikácia pre milovníkov prírody a rastlín. Umožňuje:
+- pridávať príspevky,
+- komentovať,
+- čítať články a novinky,
+- v budúcnosti používať AI chatbota (teraz len placeholder).
 
 ## Technológie
-- Backend: Python (FastAPI)  
-- Frontend: HTML, CSS, JavaScript/TypeScript  
-- Databáza: PostgreSQL / SQLite  
-- AI integrácia: externé API  
+- Backend: Python (Flask)
+- Frontend: HTML, CSS, JavaScript
+- Databáza: SQLite (súbor sa vytvorí automaticky)
 
-## Spustenie
-Backend: `uvicorn app.main:app --reload`  
-Frontend: `npm run dev`
+## Štruktúra projektu
+- `backend/`
+  - `main.py` – Flask entry point (spúšťací súbor)
+  - `routes.py` – definície trás (API a stránky)
+  - `database.py` – pripojenie k SQLite
+  - `models.py` – vytvorenie schémy tabuliek (posts, comments)
+- `templates/` – HTML šablóny (Jinja2)
+- `static/` – CSS, JS, obrázky a statické dáta (`articles.json`)
 
+## Spustenie lokálne
+1) Nainštaluj závislosti (odporúčaný virtuálny environment):
+```bash
+pip install flask
+```
+2) Spusti aplikáciu:
+```bash
+python -m backend.main
+```
+3) Otvor v prehliadači `http://localhost:5000`
 
-## Školiteľ
-- Mgr. Kristián Kolčák
+## Funkcionality
+- Domov: zoznam príspevkov, formulár na pridanie príspevku
+- Detail príspevku: zobrazenie komentárov a formulár na pridanie
+- Články: ukážkové tipy načítané zo `static/articles.json`
+- Novinky: ukážková stránka s falošnými novinkami
+- Chatbot: stránka s textom „Coming soon“
+
+## Poznámky
+- Dáta sa ukladajú do `backend/gardencircle.db`.
+- Endpointy pre príspevky a komentáre vracajú JSON a sú použité jednoduchými `fetch` požiadavkami na frontende.

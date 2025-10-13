@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}GardenCircle — Kontakt{% endblock %}
+{% block content %}
+<section class="card">
+  <header class="section-header">
+    <h2>Kontakt</h2>
+    <p class="muted">Napíš nám svoj nápad alebo spätnú väzbu.</p>
+  </header>
+  <form class="post-form" onsubmit="event.preventDefault(); alert('Ďakujeme! Ozveme sa.'); this.reset();">
+    <input type="text" placeholder="Meno" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0;margin-bottom:.5rem">
+    <input type="email" placeholder="E-mail" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0;margin-bottom:.5rem">
+    <textarea rows="4" placeholder="Správa" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0"></textarea>
+    <div style="margin-top:.5rem"><button class="btn primary">Odoslať</button></div>
+  </form>
+  
+</section>
+{% endblock %}
+
+

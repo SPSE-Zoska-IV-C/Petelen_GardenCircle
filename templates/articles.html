@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}GardenCircle — články{% endblock %}
+{% block content %}
+    <section class="card">
+      <header class="section-header">
+        <h2>Články</h2>
+        <p class="muted">Tipy a návody o rastlinách</p>
+      </header>
+      <div class="articles-grid">
+        {% for a in items %}
+          <article class="article-card">
+            {% if a.image_path %}<img src="{{ a.image_path }}" alt="{{ a.title }}" style="width:100%;border-radius:12px;margin-bottom:.5rem">{% endif %}
+            <h3>{{ a.title }}</h3>
+            <p>{{ a.content }}</p>
+            <small class="muted">{{ a.created_at }}</small>
+          </article>
+        {% else %}
+          <p class="muted">Zatiaľ žiadne články.</p>
+        {% endfor %}
+      </div>
+    </section>
+{% endblock %}
+
+

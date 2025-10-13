@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Admin Login{% endblock %}
+{% block content %}
+<section class="card full">
+  <h2>Admin Login</h2>
+  {% if error %}<p class="muted">{{ error }}</p>{% endif %}
+  <form method="post">
+    <input type="password" name="password" placeholder="Heslo" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0;margin-bottom:.5rem">
+    <button class="btn primary">Prihlásiť</button>
+  </form>
+</section>
+{% endblock %}
+
+

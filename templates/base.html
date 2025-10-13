@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="sk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}GardenCircle{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="{{ url_for('home') }}">
+        <span class="logo" aria-hidden="true">🌿</span>
+        <div>
+          <h1>GardenCircle</h1>
+          <p class="tagline">Miesto, kde rastliny a ľudia rastú spolu</p>
+        </div>
+      </a>
+      <nav class="main-nav" aria-label="Hlavná navigácia">
+        <a href="{{ url_for('home') }}">Domov</a>
+        <a href="{{ url_for('posts_page') }}">Príspevky</a>
+        <a href="{{ url_for('articles') }}">Články</a>
+        <a href="{{ url_for('news') }}">Novinky</a>
+        <a href="{{ url_for('about') }}">O projekte</a>
+        <a href="{{ url_for('contact') }}">Kontakt</a>
+        <a class="pill" href="{{ url_for('chatbot_placeholder') }}">Chatbot</a>
+        <button id="themeToggle" class="btn small" type="button" title="Prepínač témy">🌓</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <small>© {{ 2025 }} GardenCircle</small>
+      <span class="muted">Jednoduchá komunita pre milovníkov rastlín</span>
+    </div>
+  </footer>
+
+  <button id="backToTop" class="back-to-top" aria-label="Späť hore">↑</button>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>
+
+

@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}GardenCircle — Príspevky{% endblock %}
+{% block content %}
+  <section id="feed" class="card full">
+    <header class="section-header">
+      <h2>Príspevky</h2>
+      <p class="muted">Pridaj skúsenosť alebo otázku – komunita ti poradí.</p>
+    </header>
+
+    <form id="postForm" class="post-form" aria-label="Pridať príspevok" method="post" action="/api/posts">
+      <label for="postInput" class="visually-hidden">Tvoje zdieľanie</label>
+      <textarea name="content" id="postInput" rows="2" placeholder="Napíš svoj problém alebo skúsenosť..." required></textarea>
+      <div class="form-row">
+        <input name="author" id="authorInput" type="text" placeholder="Tvoje meno (nepovinné)">
+        <button type="submit" class="btn primary">Pridať príspevok</button>
+      </div>
+    </form>
+
+    <ul id="postList" class="post-list" aria-live="polite">
+      {% if posts %}
+        {% for p in posts %}
+          <li class="post-card" data-id="{{ p.id }}">
+            <div class="post-header">
+              <div class="meta">
+                <strong class="author">{{ p.author }}</strong>
+                <time class="time">{{ p.created_at }}</time>
+              </div>
+              <div class="post-actions">
+                <a class="btn small" href="/posts/{{ p.id }}">Otvoriť</a>
+              </div>
+            </div>
+            <p class="post-content">{{ p.content }}</p>
+            {% if p.image_path %}
+              <img src="{{ p.image_path }}" alt="Obrázok príspevku" style="width:100%;border-radius:12px;margin-top:.5rem">
+            {% endif %}
+          </li>
+        {% endfor %}
+      {% else %}
+        <li class="muted">Zatiaľ žiadne príspevky — buď prvý!</li>
+      {% endif %}
+    </ul>
+  </section>
+  
+  <template id="post-template">
+    <li class="post-card">
+      <div class="post-header">
+        <div class="meta">
+          <strong class="author"></strong>
+          <time class="time" datetime=""></time>
+        </div>
+        <div class="post-actions">
+          <button class="btn small delete-post" title="Vymazať príspevok">🗑️</button>
+        </div>
+      </div>
+      <p class="post-content"></p>
+
+      <div class="comments">
+        <ul class="comment-list"></ul>
+
+        <form class="comment-form" aria-label="Pridať komentár">
+          <input class="comment-input" type="text" placeholder="Napíš komentár..." required>
+          <button class="btn small">Odoslať</button>
+        </form>
+      </div>
+    </li>
+  </template>
+{% endblock %}
+
+
