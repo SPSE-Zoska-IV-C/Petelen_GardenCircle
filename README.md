@@ -36,7 +36,8 @@ python -m backend.main
 - Detail príspevku: zobrazenie komentárov a formulár na pridanie
 - Články: ukážkové tipy načítané zo `static/articles.json`
 - Novinky: ukážková stránka s falošnými novinkami
-- Chatbot: stránka s textom „Coming soon“e
+- Chatbot: stránka s textom „Coming soon“
+- Login as admin: /admin/login (password: admin)
 
 ## Poznámky
 - Dáta sa ukladajú do `backend/gardencircle.db`.
