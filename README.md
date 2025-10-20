@@ -6,6 +6,9 @@ Jednoduchá webová aplikácia pre milovníkov prírody a rastlín. Umožňuje:
 - čítať články a novinky,
 - v budúcnosti používať AI chatbota (teraz len placeholder).
 
+## Školitel
+  - Mgr. Kristián Kolčák
+
 ## Technológie
 - Backend: Python (Flask)
 - Frontend: HTML, CSS, JavaScript
