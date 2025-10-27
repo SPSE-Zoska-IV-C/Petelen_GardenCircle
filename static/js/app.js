@@ -35,8 +35,8 @@
   const searchBox = document.createElement('input');
   if (postList) {
     searchBox.type = 'search';
-    searchBox.placeholder = 'Hľadať v príspevkoch…';
-    searchBox.className = 'search-input';
+    searchBox.placeholder = '🔍 Hľadať v príspevkoch…';
+    searchBox.className = 'comment-input';
     postList.parentElement.insertBefore(searchBox, postList);
   }
 
@@ -67,7 +67,7 @@
     if (!postList) return;
     postList.innerHTML = "";
     if (!list || !list.length) {
-      postList.innerHTML = "<li class='muted'>Zatiaľ žiadne príspevky — buď prvý!</li>";
+      postList.innerHTML = "<li class='muted text-center' style='padding: var(--space-2xl);'>Zatiaľ žiadne príspevky — buď prvý a zdieľaj svoju skúsenosť!</li>";
       return;
     }
     list.forEach(async (post) => {
@@ -77,7 +77,17 @@
       tmpl.querySelector(".author").textContent = post.author || "Anonym";
       const timeEl = tmpl.querySelector(".time");
       timeEl.textContent = formatDate(post.created_at);
-      tmpl.querySelector(".post-content").innerHTML = escapeHTML(post.content);
+      const contentEl = tmpl.querySelector(".post-content");
+      contentEl.innerHTML = escapeHTML(post.content);
+      if (post.image_path) {
+        const img = document.createElement('img');
+        img.src = `/static/${post.image_path}`;
+        img.alt = 'Obrázok príspevku';
+        img.style.width = '100%';
+        img.style.borderRadius = '12px';
+        img.style.marginTop = '.5rem';
+        contentEl.insertAdjacentElement('afterend', img);
+      }
 
       const commentForm = tmpl.querySelector(".comment-form");
       commentForm.addEventListener("submit", async (ev) => {
@@ -138,21 +148,26 @@
 
   const postForm = $("#postForm");
   const postInput = $("#postInput");
-  const authorInput = $("#authorInput");
+  const fileInput = $("#fileInput");
   if (postForm) {
     postForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const content = postInput.value.trim();
-      const author = authorInput.value.trim() || "Anonym";
+      const content = (postInput?.value || '').trim();
       if (!content) return;
+      const formData = new FormData();
+      formData.append('content', content);
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        formData.append('file', fileInput.files[0]);
+      }
       const res = await fetch('/api/posts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ author, content })
+        body: formData
       });
       if (res.ok) {
-        postInput.value = '';
-        authorInput.value = '';
+        if (postInput) postInput.value = '';
+        if (fileInput) fileInput.value = '';
+        const preview = document.getElementById('imagePreview');
+        if (preview) preview.style.display = 'none';
         await loadPosts();
       }
     });

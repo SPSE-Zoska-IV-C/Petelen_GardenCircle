@@ -1,43 +1,55 @@
 {% extends 'base.html' %}
-{% block title %}GardenCircle — príspevok{% endblock %}
+
 {% block body_class %}bg-leaf{% endblock %}
+
+{% block title %}GardenCircle — Príspevok{% endblock %}
+
 {% block content %}
-    <section class="card full">
-      <header class="section-header">
-        <h2>Príspevok</h2>
-      </header>
-      <article class="post-card">
-        <div class="post-header">
-          <div class="meta">
-            <strong class="author">{{ post.author }}</strong>
-            <time class="time">{{ post.created_at }}</time>
-          </div>
+  <!-- Post Detail -->
+  <section class="card">
+    <div class="post-card">
+      <div class="post-header">
+        <div class="meta">
+          <strong class="author">{{ post.author }}</strong>
+          <time class="time">{{ post.created_at }}</time>
         </div>
-        <p class="post-content">{{ post.content }}</p>
-      </article>
-    </section>
+      </div>
+      <div class="post-content">
+        {{ post.content }}
+      </div>
+      {% if post.image_path %}
+        <img src="{{ url_for('static', filename=post.image_path) }}" alt="Obrázok príspevku">
+      {% endif %}
+    </div>
+  </section>
 
-    <section class="card full">
-      <header class="section-header">
-        <h3>Komentáre</h3>
-      </header>
-      <ul class="comment-list">
-        {% for c in comments %}
-          <li>
-            <strong>{{ c.author }}</strong> • <small class="muted">{{ c.created_at }}</small>
-            <div>{{ c.text }}</div>
-          </li>
-        {% else %}
-          <li class="muted">Zatiaľ žiadne komentáre.</li>
-        {% endfor %}
-      </ul>
+  <!-- Comments Section -->
+  <section class="card">
+    <header class="section-header">
+      <h2>Komentáre</h2>
+      <p class="muted">Čo si o tom myslíš?</p>
+    </header>
+    
+    <ul class="comment-list">
+      {% for c in comments %}
+        <li>
+          <strong>{{ c.author }}</strong>
+          <span class="muted"> • {{ c.created_at }}</span>
+          <div style="margin-top: var(--space-xs);">{{ c.text }}</div>
+        </li>
+      {% else %}
+        <li class="muted text-center" style="padding: var(--space-lg);">
+          Zatiaľ žiadne komentáre — buď prvý, kto komentuje!
+        </li>
+      {% endfor %}
+    </ul>
 
-      <form class="comment-form" method="post" action="{{ url_for('add_comment', post_id=post.id) }}">
-        <input type="text" name="author" placeholder="Tvoje meno (nepovinné)">
-        <input type="text" name="text" placeholder="Napíš komentár" required>
-        <button class="btn small">Odoslať</button>
-      </form>
-    </section>
+    <form class="comment-form" method="post" action="{{ url_for('add_comment', post_id=post.id) }}">
+      <div class="form-group">
+        <input type="text" name="author" placeholder="Tvoje meno (nepovinné)" style="margin-bottom: var(--space-sm);">
+        <textarea name="text" rows="3" placeholder="Napíš komentár..." required style="margin-bottom: var(--space-md);"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Odoslať komentár</button>
+    </form>
+  </section>
 {% endblock %}
-
-

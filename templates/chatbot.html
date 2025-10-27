@@ -1,15 +1,28 @@
 {% extends 'base.html' %}
-{% block title %}GardenCircle — chatbot{% endblock %}
+
+{% block title %}GardenCircle — AI Chatbot{% endblock %}
+
 {% block content %}
-    <section class="card">
-      <header class="section-header">
-        <h2>AI Chatbot</h2>
-        <p class="muted">Coming soon.</p>
-      </header>
-      <div class="chat-window">
-        <div class="chat-row"><div class="chat-bubble chat-bot"><strong class="muted">Bot</strong><div>Chatbot coming soon</div></div></div>
+  <section class="card">
+    <header class="section-header">
+      <h2>AI Chatbot</h2>
+      <p class="muted">Tvoj osobný asistent pre rastliny</p>
+    </header>
+    
+    <div class="chat-window" style="min-height: 400px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+      <div class="chat-bubble chat-bot" style="max-width: 90%;">
+        <div style="font-size: 3rem; margin-bottom: var(--space-md);">🤖</div>
+        <h3 style="margin-bottom: var(--space-sm); color: var(--primary-green);">Chatbot prichádza čoskoro</h3>
+        <p style="color: var(--text-medium);">Pracujeme na AI asistentovi, ktorý ti pomôže s tvojimi rastlinami. Naša AI bude schopná odpovedať na tvoje otázky a poskytnúť ti odborné rady.</p>
+        <p style="color: var(--text-muted); margin-top: var(--space-md); font-size: var(--font-size-sm);">
+          Oznámime ti, keď bude chatbot dostupný!
+        </p>
       </div>
-    </section>
+    </div>
+    
+    <div class="text-center">
+      <a href="{{ url_for('posts_page') }}" class="btn btn-secondary">Prejsť na príspevky</a>
+      <a href="{{ url_for('articles') }}" class="btn btn-ghost">Pozrieť články</a>
+    </div>
+  </section>
 {% endblock %}
-
-

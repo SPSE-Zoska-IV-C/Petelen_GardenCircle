@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}GardenCircle — {{ user.username }}{% endblock %}
+
+{% block content %}
+  <section class="card hero-card">
+    <div style="display: flex; align-items: center; gap: var(--space-xl);">
+      <div style="flex-shrink: 0;">
+        {% if user.profile_image %}
+          {% if user.profile_image.startswith('http') %}
+            <img src="{{ user.profile_image }}" alt="{{ user.username }}" style="width: 120px; height: 120px; border-radius: var(--radius-full); object-fit: cover; border: 4px solid var(--primary-green);">
+          {% else %}
+            <img src="{{ url_for('static', filename=user.profile_image) }}" alt="{{ user.username }}" style="width: 120px; height: 120px; border-radius: var(--radius-full); object-fit: cover; border: 4px solid var(--primary-green);">
+          {% endif %}
+        {% else %}
+          <div style="width: 120px; height: 120px; border-radius: var(--radius-full); background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; border: 4px solid var(--primary-green);">
+            {{ user.username[0].upper() }}
+          </div>
+        {% endif %}
+      </div>
+      <div style="flex: 1;">
+        <h1 style="font-size: var(--font-size-3xl); margin-bottom: var(--space-sm);">{{ user.username }}</h1>
+        {% if user.bio %}
+          <p style="color: var(--text-medium); font-size: var(--font-size-lg); margin-bottom: var(--space-md);">{{ user.bio }}</p>
+        {% else %}
+          <p class="muted">Zatiaľ žiadna bio</p>
+        {% endif %}
+        <small class="muted">Člen od {{ user.created_at }}</small>
+      </div>
+      {% if current_user.id == user.id %}
+        <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Upraviť profil</a>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card">
+    <header class="section-header">
+      <h2>Príspevky ({{ posts|length }})</h2>
+      <p class="muted">Príspevky od {{ user.username }}</p>
+    </header>
+
+    {% if posts %}
+      <ul class="post-list">
+        {% for post in posts %}
+          <li class="post-card">
+            <div class="post-header">
+              <div class="meta">
+                <time class="time">{{ post.created_at }}</time>
+              </div>
+            </div>
+            <p class="post-content">{{ post.content }}</p>
+            {% if post.image_path %}
+              <img src="{{ url_for('static', filename=post.image_path) }}" alt="Obrázok príspevku">
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="text-center" style="padding: var(--space-2xl);">
+        <p class="muted" style="font-size: var(--font-size-lg);">Zatiaľ žiadne príspevky</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

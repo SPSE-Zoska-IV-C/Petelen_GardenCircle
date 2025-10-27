@@ -1,24 +1,34 @@
 {% extends 'base.html' %}
-{% block title %}GardenCircle — novinky{% endblock %}
+
+{% block title %}GardenCircle — Novinky{% endblock %}
+
 {% block content %}
-    <section class="card">
-      <header class="section-header">
-        <h2>Novinky</h2>
-        <p class="muted">Krátke správy zo sveta prírody</p>
-      </header>
-      <ul class="post-list">
-        {% for n in items %}
-          <li class="post-card">
-            {% if n.image_path %}<img src="{{ n.image_path }}" alt="{{ n.title }}" style="width:100%;border-radius:12px;margin-bottom:.5rem">{% endif %}
-            <strong>{{ n.title }}</strong>
-            <p>{{ n.content }}</p>
+  <section class="card">
+    <header class="section-header">
+      <h2>Novinky</h2>
+      <p class="muted">Krátke správy zo sveta prírody a udržateľnosti</p>
+    </header>
+    
+    <div class="articles-grid">
+      {% for n in items %}
+        <article class="article-card fade-in">
+          {% if n.image_path %}
+            <img src="{{ n.image_path }}" alt="{{ n.title }}">
+          {% else %}
+            <img src="{{ url_for('static', filename='img/leaf.svg') }}" alt="{{ n.title }}" style="background: var(--light-green);">
+          {% endif %}
+          <div class="content">
+            <h3>{{ n.title }}</h3>
+            <p>{{ n.content[:150] }}{% if n.content|length > 150 %}...{% endif %}</p>
             <small class="muted">{{ n.created_at }}</small>
-          </li>
-        {% else %}
-          <li class="muted">Zatiaľ žiadne novinky.</li>
-        {% endfor %}
-      </ul>
-    </section>
+          </div>
+        </article>
+      {% else %}
+        <div class="text-center" style="grid-column: 1 / -1; padding: var(--space-2xl);">
+          <p class="muted" style="font-size: var(--font-size-lg);">Zatiaľ žiadne novinky</p>
+          <p class="muted">Skúste to neskôr znova</p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
 {% endblock %}
-
-
