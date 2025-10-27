@@ -80,7 +80,7 @@
   .hero{background:linear-gradient(180deg,#ffffff, #f3fbf4)}
   .hero-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem}
   .hero h2{margin:.25rem 0 0}
-  }
+  
   
   /* Section headers */
   .section-header h2{margin:0}
