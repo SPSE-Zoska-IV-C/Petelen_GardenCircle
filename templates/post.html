@@ -10,7 +10,9 @@
     <div class="post-card">
       <div class="post-header">
         <div class="meta">
-          <strong class="author">{{ post.author }}</strong>
+          <a href="{{ url_for('user_profile', username=post.author) }}" style="text-decoration: none; color: var(--primary-green);">
+            <strong class="author">{{ post.author }}</strong>
+          </a>
           <time class="time">{{ post.created_at }}</time>
         </div>
       </div>
@@ -18,8 +20,14 @@
         {{ post.content }}
       </div>
       {% if post.image_path %}
-        <img src="{{ url_for('static', filename=post.image_path) }}" alt="Obrázok príspevku">
+        <img src="{{ url_for('static', filename=post.image_path) }}" alt="Obrázok príspevku" loading="lazy">
       {% endif %}
+        <div class="post-actions" style="display:flex; align-items:center; gap:.5rem; margin-top:.5rem;">
+         <button id="likeBtn" class="btn btn-ghost like-btn {{ 'liked' if post.liked else '' }}" data-post-id="{{ post.id }}" aria-label="Páči sa mi to">
+           <span class="like-emoji">{{ '❤️' if post.liked else '🤍' }}</span>
+         </button>
+         <span id="likeCount" class="like-count">{{ post.like_count or 0 }}</span>
+        </div>
     </div>
   </section>
 
@@ -46,7 +54,6 @@
 
     <form class="comment-form" method="post" action="{{ url_for('add_comment', post_id=post.id) }}">
       <div class="form-group">
-        <input type="text" name="author" placeholder="Tvoje meno (nepovinné)" style="margin-bottom: var(--space-sm);">
         <textarea name="text" rows="3" placeholder="Napíš komentár..." required style="margin-bottom: var(--space-md);"></textarea>
       </div>
       <button type="submit" class="btn btn-primary">Odoslať komentár</button>

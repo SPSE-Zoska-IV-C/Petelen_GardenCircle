@@ -26,7 +26,7 @@ Jednoduchá webová aplikácia pre milovníkov prírody a rastlín. Umožňuje:
 ## Spustenie lokálne
 1) Nainštaluj závislosti (odporúčaný virtuálny environment):
 ```bash
-pip install flask
+pip install -r requirements.txt
 ```
 2) Spusti aplikáciu:
 ```bash
@@ -38,10 +38,11 @@ python -m backend.main
 - Domov: zoznam príspevkov, formulár na pridanie príspevku
 - Detail príspevku: zobrazenie komentárov a formulár na pridanie
 - Články: ukážkové tipy načítané zo `static/articles.json`
-- Novinky: ukážková stránka s falošnými novinkami
+- Novinky: živé správy z The Guardian – Environment RSS (`https://www.theguardian.com/environment/rss`), s cachovaním ~15 min.
 - Chatbot: stránka s textom „Coming soon“
 - Login as admin: /admin/login (password: admin)
 
 ## Poznámky
 - Dáta sa ukladajú do `backend/gardencircle.db`.
 - Endpointy pre príspevky a komentáre vracajú JSON a sú použité jednoduchými `fetch` požiadavkami na frontende.
+- Novinky nevyžadujú žiadne API kľúče.

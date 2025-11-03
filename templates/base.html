@@ -6,10 +6,10 @@
   <meta name="description" content="GardenCircle - Moderná komunita pre milovníkov rastlín a prírody" />
   <title>{% block title %}GardenCircle{% endblock %}</title>
   
-  <!-- Google Fonts -->
+  <!-- Google Fonts - Premium Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- Styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -29,15 +29,15 @@
       
       <nav class="main-nav" aria-label="Hlavná navigácia">
         {% if current_user.is_authenticated %}
-          <a href="{{ url_for('posts_page') }}">Príspevky</a>
-          <a href="{{ url_for('articles') }}">Články</a>
-          <a href="{{ url_for('news') }}">Novinky</a>
-          <a href="{{ url_for('chatbot_placeholder') }}" class="btn-nav">Chatbot</a>
-          <a href="{{ url_for('user_profile', username=current_user.username) }}" class="btn-nav">{{ current_user.username }}</a>
-          <a href="{{ url_for('logout') }}" class="btn-nav">Odhlásiť sa</a>
+          <a href="{{ url_for('posts_page') }}">📝 Príspevky</a>
+          <a href="{{ url_for('articles') }}">📚 Články</a>
+          <a href="{{ url_for('news') }}">🌍 Novinky</a>
+          <a href="{{ url_for('chatbot_placeholder') }}" class="btn-nav">🤖 Chatbot</a>
+          <a href="{{ url_for('user_profile', username=current_user.username) }}" class="btn-nav">👤 {{ current_user.username }}</a>
+          <a href="{{ url_for('logout') }}" class="btn-nav">🚪 Odhlásiť</a>
         {% else %}
-          <a href="{{ url_for('login') }}">Prihlásiť sa</a>
-          <a href="{{ url_for('register') }}" class="btn-nav">Registrácia</a>
+          <a href="{{ url_for('login') }}">🔑 Prihlásiť</a>
+          <a href="{{ url_for('register') }}" class="btn-nav">✨ Registrácia</a>
         {% endif %}
         <button id="themeToggle" type="button" aria-label="Prepínač témy">🌓</button>
       </nav>

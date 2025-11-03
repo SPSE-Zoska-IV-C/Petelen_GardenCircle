@@ -5,6 +5,7 @@ import os
 from .database import get_db
 from .user import User
 from .file_utils import save_uploaded_file, allowed_file, generate_unique_filename
+from .news_fetcher import fetch_guardian_environment
 
 login_manager = LoginManager()
 login_manager.login_view = 'login'
@@ -98,7 +99,13 @@ def register_routes(app):
             return render_template("404.html"), 404
         
         posts = User.get_user_posts(username)
-        return render_template("profile.html", user=user, posts=posts)
+        db = get_db()
+        followers = db.execute("SELECT COUNT(1) FROM follows WHERE followed_id=?", (user.id,)).fetchone()[0]
+        following = db.execute("SELECT COUNT(1) FROM follows WHERE follower_id=?", (user.id,)).fetchone()[0]
+        is_following = False
+        if current_user.is_authenticated and current_user.id != user.id:
+            is_following = db.execute("SELECT 1 FROM follows WHERE follower_id=? AND followed_id=?", (current_user.id, user.id)).fetchone() is not None
+        return render_template("profile.html", user=user, posts=posts, followers=followers, following=following, is_following=is_following)
 
     @app.route("/edit-profile", methods=["GET", "POST"])
     @login_required
@@ -138,11 +145,56 @@ def register_routes(app):
     @login_required
     def posts_page():
         db = get_db()
-        cur = db.execute("SELECT id, author_id, author, content, created_at, image_path FROM posts ORDER BY created_at DESC")
-        posts = [
-            {"id": r[0], "author_id": r[1], "author": r[2], "content": r[3], "created_at": r[4], "image_path": r[5]}
-            for r in cur.fetchall()
-        ]
+        # Optimized query with pagination (limit 20 posts)
+        limit = 20
+        rows = db.execute(
+            "SELECT id, author_id, author, content, created_at, image_path FROM posts ORDER BY created_at DESC LIMIT ?",
+            (limit,)
+        ).fetchall()
+        
+        if not rows:
+            return render_template("posts.html", posts=[])
+        
+        # Bulk fetch all like counts and comment counts in 2 queries instead of N queries
+        post_ids = [r[0] for r in rows]
+        placeholders = ','.join('?' * len(post_ids))
+        
+        # Get all like counts in one query
+        like_counts = db.execute(
+            f"SELECT post_id, COUNT(*) as count FROM likes WHERE post_id IN ({placeholders}) GROUP BY post_id",
+            post_ids
+        ).fetchall()
+        like_counts_dict = {row[0]: row[1] for row in like_counts}
+        
+        # Get all comment counts in one query
+        comment_counts = db.execute(
+            f"SELECT post_id, COUNT(*) as count FROM comments WHERE post_id IN ({placeholders}) GROUP BY post_id",
+            post_ids
+        ).fetchall()
+        comment_counts_dict = {row[0]: row[1] for row in comment_counts}
+        
+        # Get all liked posts for current user in one query
+        liked_posts = set()
+        if current_user.is_authenticated:
+            liked_rows = db.execute(
+                f"SELECT post_id FROM likes WHERE post_id IN ({placeholders}) AND user_id = ?",
+                post_ids + [current_user.id]
+            ).fetchall()
+            liked_posts = {row[0] for row in liked_rows}
+        
+        posts = []
+        for r in rows:
+            posts.append({
+                "id": r[0],
+                "author_id": r[1],
+                "author": r[2],
+                "content": r[3],
+                "created_at": r[4],
+                "image_path": r[5],
+                "like_count": like_counts_dict.get(r[0], 0),
+                "liked": r[0] in liked_posts,
+                "comment_count": comment_counts_dict.get(r[0], 0),
+            })
         return render_template("posts.html", posts=posts)
 
     @app.route("/api/posts", methods=["GET", "POST"])
@@ -168,14 +220,52 @@ def register_routes(app):
             )
             db.commit()
             if request.content_type and "application/json" in request.content_type:
-                return jsonify({"id": cur.lastrowid, "author": current_user.username, "content": content, "image_path": image_path}), 201
+                return jsonify({
+                    "id": cur.lastrowid, "author": current_user.username, "content": content, "image_path": image_path,
+                    "like_count": 0, "liked": False, "comment_count": 0, "created_at": None
+                }), 201
             return redirect(url_for('posts_page'))
         else:
-            cur = db.execute("SELECT id, author_id, author, content, created_at, image_path FROM posts ORDER BY created_at DESC")
-            data = [
-                {"id": r[0], "author_id": r[1], "author": r[2], "content": r[3], "created_at": r[4], "image_path": r[5]}
-                for r in cur.fetchall()
-            ]
+            # Optimized: limit results and use bulk queries
+            limit = 30
+            rows = db.execute(
+                "SELECT id, author_id, author, content, created_at, image_path FROM posts ORDER BY created_at DESC LIMIT ?",
+                (limit,)
+            ).fetchall()
+            
+            if not rows:
+                return jsonify([])
+            
+            # Bulk fetch counts
+            post_ids = [r[0] for r in rows]
+            placeholders = ','.join('?' * len(post_ids))
+            
+            like_counts = db.execute(
+                f"SELECT post_id, COUNT(*) as count FROM likes WHERE post_id IN ({placeholders}) GROUP BY post_id",
+                post_ids
+            ).fetchall()
+            like_counts_dict = {row[0]: row[1] for row in like_counts}
+            
+            comment_counts = db.execute(
+                f"SELECT post_id, COUNT(*) as count FROM comments WHERE post_id IN ({placeholders}) GROUP BY post_id",
+                post_ids
+            ).fetchall()
+            comment_counts_dict = {row[0]: row[1] for row in comment_counts}
+            
+            liked_posts = set()
+            if current_user.is_authenticated:
+                liked_rows = db.execute(
+                    f"SELECT post_id FROM likes WHERE post_id IN ({placeholders}) AND user_id = ?",
+                    post_ids + [current_user.id]
+                ).fetchall()
+                liked_posts = {row[0] for row in liked_rows}
+            
+            data = []
+            for r in rows:
+                data.append({
+                    "id": r[0], "author_id": r[1], "author": r[2], "content": r[3], "created_at": r[4], "image_path": r[5],
+                    "like_count": like_counts_dict.get(r[0], 0), "liked": r[0] in liked_posts, "comment_count": comment_counts_dict.get(r[0], 0)
+                })
             return jsonify(data)
 
     @app.route("/posts/<int:post_id>")
@@ -185,6 +275,8 @@ def register_routes(app):
         pc = db.execute("SELECT id, author_id, author, content, created_at, image_path FROM posts WHERE id=?", (post_id,)).fetchone()
         if not pc:
             return render_template("404.html"), 404
+        like_count = db.execute("SELECT COUNT(1) FROM likes WHERE post_id=?", (post_id,)).fetchone()[0]
+        liked = db.execute("SELECT 1 FROM likes WHERE post_id=? AND user_id=?", (post_id, current_user.id)).fetchone() is not None
         comments = db.execute(
             "SELECT id, author_id, author, text, created_at FROM comments WHERE post_id=? ORDER BY created_at ASC",
             (post_id,),
@@ -192,7 +284,7 @@ def register_routes(app):
         comments_fmt = [
             {"id": r[0], "author_id": r[1], "author": r[2], "text": r[3], "created_at": r[4]} for r in comments
         ]
-        post = {"id": pc[0], "author_id": pc[1], "author": pc[2], "content": pc[3], "created_at": pc[4], "image_path": pc[5]}
+        post = {"id": pc[0], "author_id": pc[1], "author": pc[2], "content": pc[3], "created_at": pc[4], "image_path": pc[5], "like_count": like_count, "liked": liked}
         return render_template("post.html", post=post, comments=comments_fmt)
 
     @app.route("/api/posts/<int:post_id>/comments", methods=["GET", "POST"])
@@ -231,6 +323,54 @@ def register_routes(app):
             db.commit()
         return ("", 204)
 
+    @app.route("/like/<int:post_id>", methods=["POST"])
+    @login_required
+    def toggle_like(post_id: int):
+        db = get_db()
+        exists = db.execute("SELECT 1 FROM posts WHERE id=?", (post_id,)).fetchone()
+        if not exists:
+            return jsonify({"error": "Not found"}), 404
+        liked = db.execute("SELECT 1 FROM likes WHERE post_id=? AND user_id=?", (post_id, current_user.id)).fetchone() is not None
+        if liked:
+            db.execute("DELETE FROM likes WHERE post_id=? AND user_id=?", (post_id, current_user.id))
+            db.commit()
+            liked = False
+        else:
+            try:
+                db.execute("INSERT OR IGNORE INTO likes(user_id, post_id) VALUES(?, ?)", (current_user.id, post_id))
+                db.commit()
+                liked = True
+            except Exception:
+                pass
+        count = db.execute("SELECT COUNT(1) FROM likes WHERE post_id=?", (post_id,)).fetchone()[0]
+        return jsonify({"liked": liked, "count": count})
+
+    @app.route("/follow/<username>", methods=["POST"])
+    @login_required
+    def follow_user(username):
+        target = User.get_by_username(username)
+        if not target or target.id == current_user.id:
+            return jsonify({"error": "Invalid user"}), 400
+        db = get_db()
+        db.execute("INSERT OR IGNORE INTO follows(follower_id, followed_id) VALUES(?, ?)", (current_user.id, target.id))
+        db.commit()
+        followers = db.execute("SELECT COUNT(1) FROM follows WHERE followed_id=?", (target.id,)).fetchone()[0]
+        following = db.execute("SELECT COUNT(1) FROM follows WHERE follower_id=?", (current_user.id,)).fetchone()[0]
+        return jsonify({"following": True, "followers": followers, "following_count": following})
+
+    @app.route("/unfollow/<username>", methods=["POST"])
+    @login_required
+    def unfollow_user(username):
+        target = User.get_by_username(username)
+        if not target or target.id == current_user.id:
+            return jsonify({"error": "Invalid user"}), 400
+        db = get_db()
+        db.execute("DELETE FROM follows WHERE follower_id=? AND followed_id=?", (current_user.id, target.id))
+        db.commit()
+        followers = db.execute("SELECT COUNT(1) FROM follows WHERE followed_id=?", (target.id,)).fetchone()[0]
+        following = db.execute("SELECT COUNT(1) FROM follows WHERE follower_id=?", (current_user.id,)).fetchone()[0]
+        return jsonify({"following": False, "followers": followers, "following_count": following})
+
     @app.route("/articles")
     @login_required
     def articles():
@@ -242,10 +382,15 @@ def register_routes(app):
     @app.route("/news")
     @login_required
     def news():
-        db = get_db()
-        rows = db.execute("SELECT id, title, content, image_path, created_at FROM news ORDER BY created_at DESC").fetchall()
-        items = [{"id":r[0],"title":r[1],"content":r[2],"image_path":r[3],"created_at":r[4]} for r in rows]
-        return render_template("news.html", items=items)
+        error_message = None
+        try:
+            bypass_cache = request.args.get("refresh") in ("1", "true", "yes")
+            articles = fetch_guardian_environment(limit=12, bypass_cache=bypass_cache)
+        except Exception:
+            articles = []
+            error_message = "Couldn't load news at the moment. Please try again later."
+
+        return render_template("news.html", articles=articles, error_message=error_message)
 
     @app.route("/about")
     @login_required
@@ -317,17 +462,8 @@ def register_routes(app):
 
     @app.route('/admin/news', methods=['POST'])
     def admin_add_news():
-        if not session.get('is_admin'):
-            return redirect(url_for('admin_login'))
-        title = request.form.get('title','').strip()
-        content = request.form.get('content','').strip()
-        image_path = request.form.get('image_path')
-        if not title or not content:
-            return redirect(url_for('admin_panel'))
-        db = get_db()
-        db.execute("INSERT INTO news(title, content, image_path) VALUES(?,?,?)", (title, content, image_path))
-        db.commit()
-        return redirect(url_for('news'))
+        # Manual news creation is disabled; live news are fetched from NewsAPI
+        return render_template('404.html'), 404
 
     @app.route('/admin/post-image', methods=['POST'])
     def admin_add_post_image():

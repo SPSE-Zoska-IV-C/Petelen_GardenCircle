@@ -3,81 +3,141 @@
 {% block title %}GardenCircle — Príspevky{% endblock %}
 
 {% block content %}
-  <section class="card">
-    <header class="section-header">
-      <h2>Príspevky komunity</h2>
-      <p class="muted">Pridaj skúsenosť alebo otázku – komunita ti poradí</p>
-    </header>
+  <!-- Create Post Section -->
+  <section class="card create-post-card fade-in">
+    <div class="create-post-header">
+      <div class="create-post-avatar">
+        {% if current_user.profile_image %}
+          {% if current_user.profile_image.startswith('http') %}
+            <img src="{{ current_user.profile_image }}" alt="{{ current_user.username }}" loading="lazy">
+          {% else %}
+            <img src="{{ url_for('static', filename=current_user.profile_image) }}" alt="{{ current_user.username }}" loading="lazy">
+          {% endif %}
+        {% else %}
+          <div class="avatar-placeholder">{{ current_user.username[0].upper() }}</div>
+        {% endif %}
+      </div>
+      <h3 style="margin: 0; font-size: var(--font-size-xl); font-weight: 700; color: var(--text-dark);">Vytvoriť nový príspevok</h3>
+    </div>
 
-    <!-- Post Form -->
     <form id="postForm" class="post-form" method="post" action="/api/posts" enctype="multipart/form-data" aria-label="Pridať príspevok">
-      <label for="postInput" class="visually-hidden">Tvoje zdieľanie</label>
-      <textarea name="content" id="postInput" rows="4" placeholder="Napíš svoj problém alebo skúsenosť..." required></textarea>
+      <div class="post-input-wrapper">
+        <textarea name="content" id="postInput" rows="4" placeholder="Čo by si chcel zdieľať so spoločenstvom? 💭" required></textarea>
+      </div>
       
-      <div class="form-group" style="margin-top: var(--space-md);">
-        <label for="fileInput" style="cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--light-green); border-radius: var(--radius-lg); border: 2px dashed var(--mint); color: var(--primary-green); font-weight: 600;">
-          📷 Vybrať obrázok
-        </label>
-        <input type="file" id="fileInput" name="file" accept="image/*" style="display: none;" onchange="previewImage(this)">
-        <div id="imagePreview" style="margin-top: var(--space-md); display: none;">
-          <img id="previewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: var(--radius-lg); border: 2px solid var(--mint);">
-          <button type="button" onclick="removeImage()" style="margin-left: var(--space-sm); padding: var(--space-xs) var(--space-sm); background: #fee; color: #c33; border: none; border-radius: var(--radius-sm); cursor: pointer;">✕</button>
+      <div id="imagePreview" class="image-preview" style="display: none;">
+        <div class="image-preview-inner">
+          <img id="previewImg" src="" alt="Preview" loading="eager">
+          <button type="button" onclick="removeImage()" class="remove-image-btn" aria-label="Odstrániť obrázok">
+            <span>×</span>
+          </button>
         </div>
       </div>
       
-      <div class="form-row" style="margin-top: var(--space-md);">
-        <button type="submit" class="btn btn-primary">Pridať príspevok</button>
+      <div class="post-form-actions">
+        <label for="fileInput" class="file-upload-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <span>Pridať obrázok</span>
+        </label>
+        <input type="file" id="fileInput" name="file" accept="image/*" style="display: none;" onchange="previewImage(this)">
+        <button type="submit" class="btn btn-primary publish-btn">
+          <span>Pridať príspevok</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
       </div>
     </form>
   </section>
 
   <!-- Posts Feed -->
-  <section class="card">
-    <ul id="postList" class="post-list" aria-live="polite">
-      {% if posts %}
+  <section class="posts-feed">
+    {% if posts %}
+      <ul id="postList" class="post-list" aria-live="polite">
         {% for p in posts %}
-          <li class="post-card" data-id="{{ p.id }}">
-            <div class="post-header">
-              <div class="meta">
-                <a href="{{ url_for('user_profile', username=p.author) }}" style="text-decoration: none; color: var(--primary-green);">
-                  <strong class="author">{{ p.author }}</strong>
-                </a>
-                <time class="time">{{ p.created_at }}</time>
-              </div>
+          <li class="post-card-modern fade-in" data-id="{{ p.id }}">
+            <div class="post-card-header">
+              <a href="{{ url_for('user_profile', username=p.author) }}" class="post-author-link">
+                <div class="post-author-avatar">
+                  <div class="avatar-placeholder-small">{{ p.author[0].upper() }}</div>
+                </div>
+                <div class="post-author-info">
+                  <strong class="post-author-name">{{ p.author }}</strong>
+                  <time class="post-time">{{ p.created_at }}</time>
+                </div>
+              </a>
             </div>
-            <p class="post-content">{{ p.content }}</p>
-            {% if p.image_path %}
-              <img src="{{ url_for('static', filename=p.image_path) }}" alt="Obrázok príspevku">
-            {% endif %}
+
+            <a href="{{ url_for('post_detail', post_id=p.id) }}" class="post-content-link">
+              <div class="post-content-wrapper">
+                <p class="post-content-text">{{ p.content }}</p>
+              </div>
+              {% if p.image_path %}
+                <div class="post-image-wrapper">
+                  <img src="{{ url_for('static', filename=p.image_path) }}" alt="Obrázok príspevku" class="post-image" loading="lazy">
+                </div>
+              {% endif %}
+            </a>
+
+            <div class="post-actions-modern">
+              <button class="action-btn like-btn-modern {{ 'liked' if p.liked else '' }}" data-post-id="{{ p.id }}" aria-label="Páči sa mi to">
+                <span class="action-icon">{{ '❤️' if p.liked else '🤍' }}</span>
+                <span class="action-label">Páči sa</span>
+                <span class="action-count like-count" data-post-id="{{ p.id }}">{{ p.like_count or 0 }}</span>
+              </button>
+              
+              <a href="{{ url_for('post_detail', post_id=p.id) }}" class="action-btn comment-btn-modern" aria-label="Komentáre">
+                <span class="action-icon">💬</span>
+                <span class="action-label">Komentáre</span>
+                <span class="action-count comment-count">{{ p.comment_count or 0 }}</span>
+              </a>
+            </div>
           </li>
         {% endfor %}
-      {% else %}
-        <li class="muted text-center" style="padding: var(--space-2xl);">
-          Zatiaľ žiadne príspevky — buď prvý a zdieľaj svoju skúsenosť!
-        </li>
-      {% endif %}
-    </ul>
+      </ul>
+    {% else %}
+      <div class="empty-posts">
+        <div class="empty-posts-icon">🌱</div>
+        <h3>Zatiaľ žiadne príspevky</h3>
+        <p class="muted">Buď prvý, kto zdieľa svoju skúsenosť s rastlinami!</p>
+      </div>
+    {% endif %}
   </section>
   
   <!-- Post Template for JavaScript -->
   <template id="post-template">
-    <li class="post-card">
-      <div class="post-header">
-        <div class="meta">
-          <strong class="author"></strong>
-          <time class="time" datetime=""></time>
-        </div>
-        <div class="post-actions">
-          <button class="btn btn-ghost btn-small delete-post" title="Vymazať príspevok">🗑️</button>
-        </div>
+    <li class="post-card-modern">
+      <div class="post-card-header">
+        <a class="post-author-link author-link-template" href="#">
+          <div class="post-author-avatar">
+            <div class="avatar-placeholder-small"></div>
+          </div>
+          <div class="post-author-info">
+            <strong class="post-author-name"></strong>
+            <time class="post-time"></time>
+          </div>
+        </a>
       </div>
-      <p class="post-content"></p>
-      <div class="comments">
-        <ul class="comment-list"></ul>
-        <form class="comment-form" aria-label="Pridať komentár">
-          <input class="comment-input" type="text" placeholder="Napíš komentár..." required>
-          <button class="btn btn-primary btn-small">Odoslať</button>
-        </form>
+      <div class="post-content-wrapper">
+        <p class="post-content-text"></p>
+      </div>
+      <div class="post-image-container"></div>
+      <div class="post-actions-modern">
+        <button class="action-btn like-btn-modern" data-post-id="" aria-label="Páči sa mi to">
+          <span class="action-icon like-emoji">🤍</span>
+          <span class="action-label">Páči sa</span>
+          <span class="action-count like-count" data-post-id="">0</span>
+        </button>
+        <a href="#" class="action-btn comment-btn-modern comment-link-template" data-post-id="" aria-label="Komentáre">
+          <span class="action-icon">💬</span>
+          <span class="action-label">Komentáre</span>
+          <span class="action-count comment-count" data-post-id="">0</span>
+        </a>
       </div>
     </li>
   </template>

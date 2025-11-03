@@ -1,6 +1,32 @@
 (() => {
   const $ = (s, root=document) => root.querySelector(s);
   const $$ = (s, root=document) => Array.from(root.querySelectorAll(s));
+  
+  // Performance helpers
+  function throttle(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+  
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+  
   // Theme toggle
   const themeToggle = $("#themeToggle");
   if (themeToggle) {
@@ -13,12 +39,12 @@
     });
   }
 
-  // Back to top
+  // Back to top - throttled scroll
   const backToTop = $("#backToTop");
   if (backToTop) {
-    window.addEventListener('scroll', () => {
+    window.addEventListener('scroll', throttle(() => {
       backToTop.classList.toggle('show', window.scrollY > 600);
-    });
+    }, 100), { passive: true });
     backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
@@ -34,10 +60,14 @@
   const postTemplate = document.getElementById("post-template");
   const searchBox = document.createElement('input');
   if (postList) {
-    searchBox.type = 'search';
-    searchBox.placeholder = '🔍 Hľadať v príspevkoch…';
-    searchBox.className = 'comment-input';
-    postList.parentElement.insertBefore(searchBox, postList);
+    // Only add search box if there are posts to filter
+    const existingPosts = postList.querySelectorAll('.post-card, .post-card-modern').length;
+    if (existingPosts > 0 || postTemplate) {
+      searchBox.type = 'search';
+      searchBox.placeholder = '🔍 Hľadať v príspevkoch…';
+      searchBox.className = 'comment-input';
+      postList.parentElement.insertBefore(searchBox, postList);
+    }
   }
 
   function escapeHTML(str = "") {
@@ -67,26 +97,89 @@
     if (!postList) return;
     postList.innerHTML = "";
     if (!list || !list.length) {
-      postList.innerHTML = "<li class='muted text-center' style='padding: var(--space-2xl);'>Zatiaľ žiadne príspevky — buď prvý a zdieľaj svoju skúsenosť!</li>";
+      postList.innerHTML = `
+        <div class="empty-posts" style="grid-column: 1 / -1;">
+          <div class="empty-posts-icon">🌱</div>
+          <h3>Zatiaľ žiadne príspevky</h3>
+          <p class="muted">Buď prvý, kto zdieľa svoju skúsenosť s rastlinami!</p>
+        </div>
+      `;
       return;
     }
     list.forEach(async (post) => {
       const tmpl = postTemplate.content.cloneNode(true);
       const li = tmpl.querySelector("li");
       li.dataset.id = post.id;
-      tmpl.querySelector(".author").textContent = post.author || "Anonym";
-      const timeEl = tmpl.querySelector(".time");
-      timeEl.textContent = formatDate(post.created_at);
-      const contentEl = tmpl.querySelector(".post-content");
-      contentEl.innerHTML = escapeHTML(post.content);
+      li.classList.add('post-card-modern');
+      
+      // Set up author link
+      const authorLink = tmpl.querySelector(".author-link-template");
+      if (authorLink) {
+        authorLink.href = `/user/${post.author || 'unknown'}`;
+        authorLink.classList.remove('author-link-template');
+      }
+      
+      // Set up author name and time
+      const authorName = tmpl.querySelector(".post-author-name");
+      if (authorName) authorName.textContent = post.author || "Anonym";
+      
+      const timeEl = tmpl.querySelector(".post-time");
+      if (timeEl) timeEl.textContent = formatDate(post.created_at);
+      
+      // Set up avatar placeholder
+      const avatarPlaceholder = tmpl.querySelector(".avatar-placeholder-small");
+      if (avatarPlaceholder && post.author) {
+        avatarPlaceholder.textContent = post.author[0].toUpperCase();
+      }
+      
+      // Set up content
+      const contentEl = tmpl.querySelector(".post-content-text");
+      if (contentEl) contentEl.innerHTML = escapeHTML(post.content);
+      
+      // Set up like button
+      const likeBtn = tmpl.querySelector(".like-btn-modern");
+      const likeCount = tmpl.querySelector(".like-count");
+      if (likeBtn && likeCount) {
+        likeBtn.setAttribute('data-post-id', post.id);
+        likeCount.setAttribute('data-post-id', post.id);
+        likeCount.textContent = post.like_count || 0;
+        const emoji = likeBtn.querySelector('.action-icon');
+        if (post.liked) {
+          likeBtn.classList.add('liked');
+          if (emoji) emoji.textContent = '❤️';
+        } else {
+          likeBtn.classList.remove('liked');
+          if (emoji) emoji.textContent = '🤍';
+        }
+      }
+      
+      // Set up comment button
+      const commentBtn = tmpl.querySelector(".comment-link-template");
+      const commentCount = tmpl.querySelector(".comment-count");
+      if (commentBtn && commentCount) {
+        commentBtn.href = `/posts/${post.id}`;
+        commentBtn.classList.remove('comment-link-template');
+        commentCount.setAttribute('data-post-id', post.id);
+        commentCount.textContent = post.comment_count || 0;
+      }
+      
+      // Set up image with lazy loading
       if (post.image_path) {
-        const img = document.createElement('img');
-        img.src = `/static/${post.image_path}`;
-        img.alt = 'Obrázok príspevku';
-        img.style.width = '100%';
-        img.style.borderRadius = '12px';
-        img.style.marginTop = '.5rem';
-        contentEl.insertAdjacentElement('afterend', img);
+        const imgContainer = tmpl.querySelector(".post-image-container");
+        if (imgContainer) {
+          const imageWrapper = document.createElement('div');
+          imageWrapper.className = 'post-image-wrapper';
+          const img = document.createElement('img');
+          img.src = `/static/${post.image_path}`;
+          img.alt = 'Obrázok príspevku';
+          img.className = 'post-image';
+          img.loading = 'lazy';
+          imageWrapper.appendChild(img);
+          const contentWrapper = tmpl.querySelector(".post-content-wrapper");
+          if (contentWrapper) {
+            contentWrapper.parentNode.insertBefore(imageWrapper, contentWrapper.nextSibling);
+          }
+        }
       }
 
       const commentForm = tmpl.querySelector(".comment-form");
@@ -144,7 +237,40 @@
     renderPosts(filtered);
   }
 
-  if (searchBox) searchBox.addEventListener('input', loadPosts);
+  // Filter server-rendered posts client-side if no dynamic rendering
+  // Cache card selectors for better performance
+  let cachedCards = null;
+  function filterServerRenderedPosts() {
+    if (!postList || !searchBox) return;
+    const query = searchBox.value.toLowerCase();
+    if (!cachedCards) {
+      cachedCards = Array.from(postList.querySelectorAll('.post-card, .post-card-modern')).map(card => ({
+        element: card,
+        content: (card.querySelector('.post-content, .post-content-text')?.textContent || '').toLowerCase(),
+        author: (card.querySelector('.author, .post-author-name')?.textContent || '').toLowerCase()
+      }));
+    }
+    cachedCards.forEach(({element, content, author}) => {
+      const matches = !query || content.includes(query) || author.includes(query);
+      element.style.display = matches ? '' : 'none';
+    });
+  }
+
+  if (searchBox) {
+    // Cache server-rendered posts selector
+    const hasServerRenderedPosts = postList && postList.querySelectorAll('.post-card, .post-card-modern').length > 0;
+    
+    // Debounce search input
+    searchBox.addEventListener('input', debounce(() => {
+      // If using dynamic rendering (template exists), use loadPosts
+      // Otherwise filter server-rendered posts client-side
+      if (postTemplate && postList.querySelectorAll('.post-card, .post-card-modern').length === 0) {
+        loadPosts();
+      } else {
+        filterServerRenderedPosts();
+      }
+    }, 300));
+  }
 
   const postForm = $("#postForm");
   const postInput = $("#postInput");
@@ -168,7 +294,8 @@
         if (fileInput) fileInput.value = '';
         const preview = document.getElementById('imagePreview');
         if (preview) preview.style.display = 'none';
-        await loadPosts();
+        // Reload page to show new post with server-rendered template
+        window.location.reload();
       }
     });
   }
@@ -192,7 +319,71 @@
       });
   }
 
-  loadPosts();
+  // Only load posts if using dynamic rendering (not if posts are already rendered server-side)
+  if (postList && postTemplate && postList.querySelectorAll('.post-card, .post-card-modern').length === 0) {
+    loadPosts();
+  }
+  
+  // Like buttons (delegated)
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.like-btn') || e.target.closest('.like-btn-modern');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const postId = btn.getAttribute('data-post-id');
+    if (!postId) return;
+    
+    try {
+      const res = await fetch(`/like/${postId}`, { method: 'POST' });
+      if (!res.ok) {
+        console.error('Like failed:', res.status);
+        return;
+      }
+      const data = await res.json();
+      const countEls = document.querySelectorAll(`.like-count[data-post-id='${postId}'], #likeCount`);
+      countEls.forEach(el => { el.textContent = data.count || 0; });
+      
+      // Update button state with animation
+      const emoji = btn.querySelector('.action-icon') || btn.querySelector('.like-emoji') || btn;
+      if (data.liked) {
+        btn.classList.add('liked');
+        if (emoji && emoji.tagName === 'SPAN') {
+          emoji.textContent = '❤️';
+        } else if (emoji) {
+          emoji.textContent = '❤️';
+        }
+      } else {
+        btn.classList.remove('liked');
+        if (emoji && emoji.tagName === 'SPAN') {
+          emoji.textContent = '🤍';
+        } else if (emoji) {
+          emoji.textContent = '🤍';
+        }
+      }
+    } catch (err) {
+      console.error('Like error:', err);
+    }
+  });
+
+  // Follow form
+  const followForm = document.getElementById('followForm');
+  if (followForm) {
+    followForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = followForm.getAttribute('data-username');
+      const btn = document.getElementById('followBtn');
+      const isUnfollow = (btn && btn.textContent.trim().toLowerCase() === 'unfollow');
+      const url = isUnfollow ? `/unfollow/${username}` : `/follow/${username}`;
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (btn) btn.textContent = data.following ? 'Unfollow' : 'Follow';
+      const f1 = document.getElementById('followersCount');
+      const f2 = document.getElementById('followingCount');
+      if (f1 && typeof data.followers === 'number') f1.textContent = `Sledujúci: ${data.followers}`;
+      if (f2 && typeof data.following_count === 'number') f2.textContent = `Sleduje: ${data.following_count}`;
+    });
+  }
 })();
 
 

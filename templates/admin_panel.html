@@ -22,13 +22,8 @@
     <div style="margin-top:.5rem"><button class="btn primary">Pridať článok</button></div>
   </form>
 
-  <h3>Nová novinka</h3>
-  <form method="post" action="/admin/news">
-    <input name="title" placeholder="Názov" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0;margin-bottom:.5rem">
-    <textarea name="content" rows="3" placeholder="Krátky text" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0"></textarea>
-    <input name="image_path" id="newsImage" placeholder="Cesta k obrázku (z uploadu)">
-    <div style="margin-top:.5rem"><button class="btn primary">Pridať novinku</button></div>
-  </form>
+  <h3>Novinky</h3>
+  <p class="muted">Novinky sú teraz načítavané automaticky z NewsAPI.org a nie je možné ich pridávať manuálne.</p>
 
   <h3>Pridať obrázok k príspevku</h3>
   <form method="post" action="/admin/post-image">

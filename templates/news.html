@@ -9,24 +9,40 @@
       <p class="muted">Krátke správy zo sveta prírody a udržateľnosti</p>
     </header>
     
+    {% if error_message %}
+      <div class="text-center" style="padding: var(--space-2xl);">
+        <p class="muted" style="font-size: var(--font-size-lg);">{{ error_message }}</p>
+      </div>
+    {% endif %}
+
+    <div style="display:flex; justify-content:flex-end; margin-bottom: .75rem;">
+      <a class="btn btn-secondary" href="{{ url_for('news') }}?refresh=1">🔄 Obnoviť</a>
+    </div>
+
     <div class="articles-grid">
-      {% for n in items %}
-        <article class="article-card fade-in">
-          {% if n.image_path %}
-            <img src="{{ n.image_path }}" alt="{{ n.title }}">
-          {% else %}
-            <img src="{{ url_for('static', filename='img/leaf.svg') }}" alt="{{ n.title }}" style="background: var(--light-green);">
-          {% endif %}
+      {% for a in articles %}
+        <article class="article-card fade-in" style="transition: transform .2s ease, box-shadow .2s ease;">
+          {% set thumb = a.image or url_for('static', filename='img/leaf.svg') %}
+          <a href="{{ a.link }}" target="_blank" rel="noopener" aria-label="Prejsť na článok">
+            <img src="{{ thumb }}" alt="{{ a.title }}" loading="lazy">
+          </a>
           <div class="content">
-            <h3>{{ n.title }}</h3>
-            <p>{{ n.content[:150] }}{% if n.content|length > 150 %}...{% endif %}</p>
-            <small class="muted">{{ n.created_at }}</small>
+            <h3><a href="{{ a.link }}" target="_blank" rel="noopener">{{ a.title }}</a></h3>
+            <p>{{ (a.summary or '')[:180] }}{% if a.summary and a.summary|length > 180 %}...{% endif %}</p>
+            <div class="meta muted">
+              <span>{{ a.source or 'Unknown source' }}</span>
+              {% if a.published_at %}
+                <span>• {{ a.published_at }}</span>
+              {% endif %}
+            </div>
+            <div class="actions">
+              <a class="btn btn-secondary" href="{{ a.link }}" target="_blank" rel="noopener">Čítať viac</a>
+            </div>
           </div>
         </article>
       {% else %}
         <div class="text-center" style="grid-column: 1 / -1; padding: var(--space-2xl);">
-          <p class="muted" style="font-size: var(--font-size-lg);">Zatiaľ žiadne novinky</p>
-          <p class="muted">Skúste to neskôr znova</p>
+          <p class="muted" style="font-size: var(--font-size-lg);">No nature news found at the moment. Please check back later.</p>
         </div>
       {% endfor %}
     </div>
