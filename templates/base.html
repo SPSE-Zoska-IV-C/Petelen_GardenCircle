@@ -32,14 +32,22 @@
           <a href="{{ url_for('posts_page') }}">📝 Príspevky</a>
           <a href="{{ url_for('articles') }}">📚 Články</a>
           <a href="{{ url_for('news') }}">🌍 Novinky</a>
-          <a href="{{ url_for('chatbot_placeholder') }}" class="btn-nav">🤖 Chatbot</a>
-          <a href="{{ url_for('user_profile', username=current_user.username) }}" class="btn-nav">👤 {{ current_user.username }}</a>
-          <a href="{{ url_for('logout') }}" class="btn-nav">🚪 Odhlásiť</a>
         {% else %}
           <a href="{{ url_for('login') }}">🔑 Prihlásiť</a>
-          <a href="{{ url_for('register') }}" class="btn-nav">✨ Registrácia</a>
         {% endif %}
-        <button id="themeToggle" type="button" aria-label="Prepínač témy">🌓</button>
+        <button id="menuToggle" type="button" class="menu-toggle" aria-label="Menu" aria-expanded="false">
+          <span class="menu-icon">☰</span>
+        </button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('chatbot_placeholder') }}">🤖 Chatbot</a>
+            <a href="{{ url_for('user_profile', username=current_user.username) }}">👤 {{ current_user.username }}</a>
+            <a href="{{ url_for('logout') }}">🚪 Odhlásiť</a>
+          {% else %}
+            <a href="{{ url_for('register') }}">✨ Registrácia</a>
+          {% endif %}
+          <button id="themeToggle" type="button" aria-label="Prepínač témy">🌓 Téma</button>
+        </div>
       </nav>
     </div>
   </header>

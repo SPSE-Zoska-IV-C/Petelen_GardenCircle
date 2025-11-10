@@ -7,6 +7,12 @@ from .user import User
 from .file_utils import save_uploaded_file, allowed_file, generate_unique_filename
 from .news_fetcher import fetch_guardian_environment
 
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
 login_manager = LoginManager()
 login_manager.login_view = 'login'
 
@@ -98,8 +104,59 @@ def register_routes(app):
         if not user:
             return render_template("404.html"), 404
         
-        posts = User.get_user_posts(username)
         db = get_db()
+        # Get posts with same structure as posts page
+        rows = db.execute(
+            "SELECT id, author_id, author, content, created_at, image_path FROM posts WHERE author_id = ? ORDER BY created_at DESC",
+            (user.id,)
+        ).fetchall()
+        
+        if not rows:
+            posts = []
+        else:
+            # Bulk fetch all like counts and comment counts
+            post_ids = [r[0] for r in rows]
+            placeholders = ','.join('?' * len(post_ids))
+            
+            # Get all like counts in one query
+            like_counts = db.execute(
+                f"SELECT post_id, COUNT(*) as count FROM likes WHERE post_id IN ({placeholders}) GROUP BY post_id",
+                post_ids
+            ).fetchall()
+            like_counts_dict = {row[0]: row[1] for row in like_counts}
+            
+            # Get all comment counts in one query
+            comment_counts = db.execute(
+                f"SELECT post_id, COUNT(*) as count FROM comments WHERE post_id IN ({placeholders}) GROUP BY post_id",
+                post_ids
+            ).fetchall()
+            comment_counts_dict = {row[0]: row[1] for row in comment_counts}
+            
+            # Get all liked posts for current user in one query
+            liked_posts = set()
+            if current_user.is_authenticated:
+                liked_rows = db.execute(
+                    f"SELECT post_id FROM likes WHERE post_id IN ({placeholders}) AND user_id = ?",
+                    post_ids + [current_user.id]
+                ).fetchall()
+                liked_posts = {row[0] for row in liked_rows}
+            
+            # Format posts with all data
+            posts = []
+            for r in rows:
+                post_id = r[0]
+                posts.append({
+                    "id": post_id,
+                    "author_id": r[1],
+                    "author": r[2],
+                    "content": r[3],
+                    "created_at": r[4],
+                    "image_path": r[5],
+                    "like_count": like_counts_dict.get(post_id, 0),
+                    "liked": post_id in liked_posts,
+                    "comment_count": comment_counts_dict.get(post_id, 0)
+                })
+        
         followers = db.execute("SELECT COUNT(1) FROM follows WHERE followed_id=?", (user.id,)).fetchone()[0]
         following = db.execute("SELECT COUNT(1) FROM follows WHERE follower_id=?", (user.id,)).fetchone()[0]
         is_following = False
@@ -407,10 +464,144 @@ def register_routes(app):
     def chatbot_placeholder():
         return render_template("chatbot.html")
 
-    @app.route("/api/chatbot", methods=["GET"])
+    @app.route("/api/chatbot", methods=["POST"])
     @login_required
-    def api_chatbot_placeholder():
-        return jsonify({"reply": "Coming soon"})
+    def api_chatbot():
+        """Handle chatbot requests using Google AI Studio (Gemini API)"""
+        try:
+            data = request.get_json()
+            message = data.get("message", "").strip()
+            
+            if not message:
+                return jsonify({"error": "Message is required"}), 400
+            
+            # Get API key from environment variable
+            api_key = os.getenv("GOOGLE_AI_STUDIO_API_KEY")
+            
+            if not api_key:
+                return jsonify({
+                    "error": "Google AI Studio API key not configured. Please set GOOGLE_AI_STUDIO_API_KEY environment variable."
+                }), 500
+            
+            if not GEMINI_AVAILABLE:
+                return jsonify({
+                    "error": "Google Generative AI library not installed. Please run: pip install google-generativeai"
+                }), 500
+            
+            # Configure Gemini API
+            genai.configure(api_key=api_key)
+            
+            # Try different model names - use available gemini-2.5 models
+            # Try models in order of preference (stable versions first, then preview)
+            model_names = [
+                'gemini-2.5-flash',  # Stable flash version (fastest)
+                'gemini-2.5-pro-preview-05-06',  # Latest pro preview
+                'gemini-2.5-flash-preview-05-20',  # Latest flash preview
+                'gemini-2.5-pro-preview-03-25',  # Older pro preview
+                'gemini-pro',  # Fallback to original (may not work)
+            ]
+            
+            model = None
+            last_error = None
+            
+            # Create a system prompt for plant-related assistance
+            system_prompt = """You are a helpful AI assistant specialized in plants and gardening. 
+            You provide expert advice on plant care, gardening tips, plant identification, and troubleshooting plant problems.
+            Be friendly, informative, and provide practical advice. If you don't know something, admit it.
+            Always respond in Slovak language."""
+            
+            # Combine system prompt with user message
+            full_prompt = f"{system_prompt}\n\nUser question: {message}\n\nAssistant:"
+            
+            # Try each model until one works
+            response = None
+            for model_name in model_names:
+                try:
+                    model = genai.GenerativeModel(model_name)
+                    # Try to generate response
+                    response = model.generate_content(full_prompt)
+                    break  # Success, exit loop
+                except Exception as e:
+                    last_error = str(e)
+                    response = None
+                    continue  # Try next model
+            
+            if response is None:
+                # If all models failed, try to list available models for debugging
+                try:
+                    available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                    model_list = ', '.join(available_models[:5]) if available_models else "žiadne"
+                    return jsonify({
+                        "error": f"Žiadny z modelov nefunguje. Dostupné modely: {model_list}. Posledná chyba: {last_error}. Skúste aktualizovať: pip install --upgrade google-generativeai"
+                    }), 500
+                except Exception as list_error:
+                    return jsonify({
+                        "error": f"Nepodarilo sa nájsť fungujúci model. Posledná chyba: {last_error}. Skúste aktualizovať google-generativeai: pip install --upgrade google-generativeai"
+                    }), 500
+            
+            reply = response.text if response.text else "Prepáč, nepodarilo sa mi vygenerovať odpoveď."
+            
+            # Save messages to database
+            db = get_db()
+            try:
+                # Save user message
+                db.execute(
+                    "INSERT INTO chat_messages (user_id, role, message) VALUES (?, ?, ?)",
+                    (current_user.id, 'user', message)
+                )
+                # Save bot reply
+                db.execute(
+                    "INSERT INTO chat_messages (user_id, role, message) VALUES (?, ?, ?)",
+                    (current_user.id, 'bot', reply)
+                )
+                db.commit()
+            except Exception as db_error:
+                # Log error but don't fail the request
+                print(f"Error saving chat message: {db_error}")
+            
+            return jsonify({"reply": reply})
+            
+        except Exception as e:
+            return jsonify({"error": f"Chyba pri komunikácii s AI: {str(e)}"}), 500
+
+    @app.route("/api/chatbot/history", methods=["GET"])
+    @login_required
+    def api_chatbot_history():
+        """Get chat history for the current user"""
+        try:
+            db = get_db()
+            messages = db.execute(
+                "SELECT role, message, created_at FROM chat_messages WHERE user_id = ? ORDER BY created_at ASC",
+                (current_user.id,)
+            ).fetchall()
+            
+            history = [
+                {
+                    "role": msg[0],
+                    "message": msg[1],
+                    "created_at": msg[2]
+                }
+                for msg in messages
+            ]
+            
+            return jsonify({"history": history})
+        except Exception as e:
+            return jsonify({"error": f"Chyba pri načítaní histórie: {str(e)}"}), 500
+
+    @app.route("/api/chatbot/clear", methods=["POST"])
+    @login_required
+    def api_chatbot_clear():
+        """Clear chat history for the current user"""
+        try:
+            db = get_db()
+            db.execute(
+                "DELETE FROM chat_messages WHERE user_id = ?",
+                (current_user.id,)
+            )
+            db.commit()
+            return jsonify({"success": True})
+        except Exception as e:
+            return jsonify({"error": f"Chyba pri vymazaní histórie: {str(e)}"}), 500
 
     # Admin auth (unchanged)
     @app.route('/admin/login', methods=['GET','POST'])

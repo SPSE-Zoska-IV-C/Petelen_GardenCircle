@@ -57,6 +57,9 @@
 
   <!-- Posts Feed -->
   <section class="posts-feed">
+    <div id="searchContainer" class="post-search-container" style="display: none;">
+      <input type="search" id="postSearchInput" class="post-search-input" placeholder="🔍 Hľadať v príspevkoch…" aria-label="Hľadať v príspevkoch">
+    </div>
     {% if posts %}
       <ul id="postList" class="post-list" aria-live="polite">
         {% for p in posts %}
@@ -123,10 +126,12 @@
           </div>
         </a>
       </div>
-      <div class="post-content-wrapper">
-        <p class="post-content-text"></p>
-      </div>
-      <div class="post-image-container"></div>
+      <a href="#" class="post-content-link">
+        <div class="post-content-wrapper">
+          <p class="post-content-text"></p>
+        </div>
+        <div class="post-image-container"></div>
+      </a>
       <div class="post-actions-modern">
         <button class="action-btn like-btn-modern" data-post-id="" aria-label="Páči sa mi to">
           <span class="action-icon like-emoji">🤍</span>
@@ -161,5 +166,6 @@
       document.getElementById('fileInput').value = '';
       document.getElementById('imagePreview').style.display = 'none';
     }
+
   </script>
 {% endblock %}

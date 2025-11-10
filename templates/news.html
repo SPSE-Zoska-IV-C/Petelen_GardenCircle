@@ -28,7 +28,7 @@
           </a>
           <div class="content">
             <h3><a href="{{ a.link }}" target="_blank" rel="noopener">{{ a.title }}</a></h3>
-            <p>{{ (a.summary or '')[:180] }}{% if a.summary and a.summary|length > 180 %}...{% endif %}</p>
+            <p>{{ (a.summary or '')|striptags|truncate(180) }}</p>
             <div class="meta muted">
               <span>{{ a.source or 'Unknown source' }}</span>
               {% if a.published_at %}

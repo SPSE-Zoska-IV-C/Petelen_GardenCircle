@@ -27,6 +27,34 @@
     };
   }
   
+  // Menu toggle
+  const menuToggle = $("#menuToggle");
+  const dropdownMenu = $("#dropdownMenu");
+  if (menuToggle && dropdownMenu) {
+    menuToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
+      menuToggle.setAttribute('aria-expanded', !isExpanded);
+      dropdownMenu.classList.toggle('show', !isExpanded);
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!menuToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+        menuToggle.setAttribute('aria-expanded', 'false');
+        dropdownMenu.classList.remove('show');
+      }
+    });
+
+    // Close menu when clicking on a link inside
+    dropdownMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        menuToggle.setAttribute('aria-expanded', 'false');
+        dropdownMenu.classList.remove('show');
+      });
+    });
+  }
+
   // Theme toggle
   const themeToggle = $("#themeToggle");
   if (themeToggle) {
@@ -58,15 +86,14 @@
   // Post search/filter
   const postList = $("#postList");
   const postTemplate = document.getElementById("post-template");
-  const searchBox = document.createElement('input');
-  if (postList) {
-    // Only add search box if there are posts to filter
+  const searchContainer = $("#searchContainer");
+  const searchBox = $("#postSearchInput");
+  
+  if (postList && searchContainer) {
+    // Show search container if there are posts
     const existingPosts = postList.querySelectorAll('.post-card, .post-card-modern').length;
     if (existingPosts > 0 || postTemplate) {
-      searchBox.type = 'search';
-      searchBox.placeholder = '🔍 Hľadať v príspevkoch…';
-      searchBox.className = 'comment-input';
-      postList.parentElement.insertBefore(searchBox, postList);
+      searchContainer.style.display = 'block';
     }
   }
 
@@ -134,7 +161,9 @@
       
       // Set up content
       const contentEl = tmpl.querySelector(".post-content-text");
-      if (contentEl) contentEl.innerHTML = escapeHTML(post.content);
+      if (contentEl) {
+        contentEl.innerHTML = escapeHTML(post.content || '');
+      }
       
       // Set up like button
       const likeBtn = tmpl.querySelector(".like-btn-modern");
@@ -166,7 +195,8 @@
       // Set up image with lazy loading
       if (post.image_path) {
         const imgContainer = tmpl.querySelector(".post-image-container");
-        if (imgContainer) {
+        const contentLink = tmpl.querySelector(".post-content-link");
+        if (imgContainer || contentLink) {
           const imageWrapper = document.createElement('div');
           imageWrapper.className = 'post-image-wrapper';
           const img = document.createElement('img');
@@ -175,9 +205,13 @@
           img.className = 'post-image';
           img.loading = 'lazy';
           imageWrapper.appendChild(img);
-          const contentWrapper = tmpl.querySelector(".post-content-wrapper");
-          if (contentWrapper) {
-            contentWrapper.parentNode.insertBefore(imageWrapper, contentWrapper.nextSibling);
+          
+          // Insert image inside the content link if it exists
+          if (contentLink) {
+            contentLink.appendChild(imageWrapper);
+          } else if (imgContainer) {
+            // Fallback: use old structure
+            imgContainer.appendChild(imageWrapper);
           }
         }
       }
@@ -232,7 +266,7 @@
   async function loadPosts() {
     if (!postList) return;
     const data = await fetchPosts();
-    const query = (searchBox.value || '').toLowerCase();
+    const query = (searchBox && searchBox.value ? searchBox.value : '').toLowerCase();
     const filtered = !query ? data : data.filter(p => (p.content||'').toLowerCase().includes(query) || (p.author||'').toLowerCase().includes(query));
     renderPosts(filtered);
   }

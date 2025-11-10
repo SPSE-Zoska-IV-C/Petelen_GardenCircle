@@ -68,6 +68,15 @@ def ensure_schema():
             FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (followed_id) REFERENCES users(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            role TEXT NOT NULL CHECK(role IN ('user', 'bot')),
+            message TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
         
         -- Performance indexes
         CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
@@ -79,6 +88,8 @@ def ensure_schema():
         CREATE INDEX IF NOT EXISTS idx_comments_author_id ON comments(author_id);
         CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows(follower_id);
         CREATE INDEX IF NOT EXISTS idx_follows_followed ON follows(followed_id);
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_user_id ON chat_messages(user_id);
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at DESC);
         """
     )
     

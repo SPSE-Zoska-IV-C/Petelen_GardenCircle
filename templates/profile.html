@@ -60,24 +60,53 @@
     </header>
 
     {% if posts %}
-      <ul class="post-list">
-        {% for post in posts %}
-          <li class="post-card">
-            <div class="post-header">
-              <div class="meta">
-                <time class="time">{{ post.created_at }}</time>
-              </div>
+      <ul id="postList" class="post-list" aria-live="polite">
+        {% for p in posts %}
+          <li class="post-card-modern fade-in" data-id="{{ p.id }}">
+            <div class="post-card-header">
+              <a href="{{ url_for('user_profile', username=p.author) }}" class="post-author-link">
+                <div class="post-author-avatar">
+                  <div class="avatar-placeholder-small">{{ p.author[0].upper() }}</div>
+                </div>
+                <div class="post-author-info">
+                  <strong class="post-author-name">{{ p.author }}</strong>
+                  <time class="post-time">{{ p.created_at }}</time>
+                </div>
+              </a>
             </div>
-            <p class="post-content">{{ post.content }}</p>
-            {% if post.image_path %}
-              <img src="{{ url_for('static', filename=post.image_path) }}" alt="Obrázok príspevku" loading="lazy">
-            {% endif %}
+
+            <a href="{{ url_for('post_detail', post_id=p.id) }}" class="post-content-link">
+              <div class="post-content-wrapper">
+                <p class="post-content-text">{{ p.content }}</p>
+              </div>
+              {% if p.image_path %}
+                <div class="post-image-wrapper">
+                  <img src="{{ url_for('static', filename=p.image_path) }}" alt="Obrázok príspevku" class="post-image" loading="lazy">
+                </div>
+              {% endif %}
+            </a>
+
+            <div class="post-actions-modern">
+              <button class="action-btn like-btn-modern {{ 'liked' if p.liked else '' }}" data-post-id="{{ p.id }}" aria-label="Páči sa mi to">
+                <span class="action-icon">{{ '❤️' if p.liked else '🤍' }}</span>
+                <span class="action-label">Páči sa</span>
+                <span class="action-count like-count" data-post-id="{{ p.id }}">{{ p.like_count or 0 }}</span>
+              </button>
+              
+              <a href="{{ url_for('post_detail', post_id=p.id) }}" class="action-btn comment-btn-modern" aria-label="Komentáre">
+                <span class="action-icon">💬</span>
+                <span class="action-label">Komentáre</span>
+                <span class="action-count comment-count">{{ p.comment_count or 0 }}</span>
+              </a>
+            </div>
           </li>
         {% endfor %}
       </ul>
     {% else %}
-      <div class="text-center" style="padding: var(--space-2xl);">
-        <p class="muted" style="font-size: var(--font-size-lg);">Zatiaľ žiadne príspevky</p>
+      <div class="empty-posts">
+        <div class="empty-posts-icon">🌱</div>
+        <h3>Zatiaľ žiadne príspevky</h3>
+        <p class="muted">Buď prvý, kto zdieľa svoju skúsenosť s rastlinami!</p>
       </div>
     {% endif %}
   </section>

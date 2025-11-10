@@ -1,7 +1,12 @@
 # backend/main.py
 from flask import Flask
+from dotenv import load_dotenv
+import os
 from .database import close_db
 from .models import ensure_schema
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__, static_folder="../static", template_folder="../templates")
 
