@@ -34,11 +34,10 @@
     menuToggle.addEventListener('click', (e) => {
       e.stopPropagation();
       const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
-      menuToggle.setAttribute('aria-expanded', !isExpanded);
+      menuToggle.setAttribute('aria-expanded', (!isExpanded).toString());
       dropdownMenu.classList.toggle('show', !isExpanded);
     });
 
-    // Close menu when clicking outside
     document.addEventListener('click', (e) => {
       if (!menuToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
         menuToggle.setAttribute('aria-expanded', 'false');
@@ -46,9 +45,8 @@
       }
     });
 
-    // Close menu when clicking on a link inside
-    dropdownMenu.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
+    dropdownMenu.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('click', () => {
         menuToggle.setAttribute('aria-expanded', 'false');
         dropdownMenu.classList.remove('show');
       });

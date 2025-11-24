@@ -436,6 +436,16 @@ def register_routes(app):
         items = [{"id":r[0],"title":r[1],"content":r[2],"image_path":r[3],"created_at":r[4]} for r in rows]
         return render_template("articles.html", items=items)
 
+    @app.route("/articles/<int:article_id>")
+    @login_required
+    def article_detail(article_id: int):
+        db = get_db()
+        row = db.execute("SELECT id, title, content, image_path, created_at FROM articles WHERE id=?", (article_id,)).fetchone()
+        if not row:
+            return render_template("404.html"), 404
+        article = {"id": row[0], "title": row[1], "content": row[2], "image_path": row[3], "created_at": row[4]}
+        return render_template("article_detail.html", article=article)
+
     @app.route("/news")
     @login_required
     def news():
@@ -623,7 +633,15 @@ def register_routes(app):
     def admin_panel():
         if not session.get('is_admin'):
             return redirect(url_for('admin_login'))
-        return render_template('admin_panel.html')
+        db = get_db()
+        rows = db.execute(
+            "SELECT id, author, content, created_at FROM posts ORDER BY created_at DESC LIMIT 20"
+        ).fetchall()
+        recent_posts = [
+            {"id": r[0], "author": r[1], "content": r[2], "created_at": r[3]}
+            for r in rows
+        ]
+        return render_template('admin_panel.html', recent_posts=recent_posts)
 
     @app.route('/admin/upload', methods=['POST'])
     def admin_upload():
@@ -641,15 +659,37 @@ def register_routes(app):
     def admin_add_article():
         if not session.get('is_admin'):
             return redirect(url_for('admin_login'))
-        title = request.form.get('title','').strip()
-        content = request.form.get('content','').strip()
-        image_path = request.form.get('image_path')
+        title = (request.form.get('title') or '').strip()
+        content = (request.form.get('content') or '').strip()
+        external_image = (request.form.get('external_image_url') or '').strip()
+        image_file = request.files.get('image_file')
+        image_path = external_image or None
+        if image_file and image_file.filename:
+            uploaded = save_uploaded_file(image_file, upload_dir)
+            if uploaded:
+                image_path = uploaded
         if not title or not content:
             return redirect(url_for('admin_panel'))
         db = get_db()
         db.execute("INSERT INTO articles(title, content, image_path) VALUES(?,?,?)", (title, content, image_path))
         db.commit()
         return redirect(url_for('articles'))
+
+    @app.route('/admin/delete-post', methods=['POST'])
+    def admin_delete_post():
+        if not session.get('is_admin'):
+            return redirect(url_for('admin_login'))
+        post_id = request.form.get('post_id')
+        try:
+            post_id = int(post_id)
+        except (TypeError, ValueError):
+            return redirect(url_for('admin_panel'))
+        db = get_db()
+        db.execute("DELETE FROM comments WHERE post_id=?", (post_id,))
+        db.execute("DELETE FROM likes WHERE post_id=?", (post_id,))
+        db.execute("DELETE FROM posts WHERE id=?", (post_id,))
+        db.commit()
+        return redirect(url_for('admin_panel'))
 
     @app.route('/admin/news', methods=['POST'])
     def admin_add_news():

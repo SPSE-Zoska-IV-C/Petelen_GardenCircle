@@ -5,8 +5,7 @@
 {% block title %}GardenCircle — Príspevok{% endblock %}
 
 {% block content %}
-  <!-- Post Detail -->
-  <section class="card">
+  <section class="card post-detail-card">
     <div class="post-card">
       <div class="post-header">
         <div class="meta">
@@ -22,41 +21,40 @@
       {% if post.image_path %}
         <img src="{{ url_for('static', filename=post.image_path) }}" alt="Obrázok príspevku" loading="lazy">
       {% endif %}
-        <div class="post-actions" style="display:flex; align-items:center; gap:.5rem; margin-top:.5rem;">
-         <button id="likeBtn" class="btn btn-ghost like-btn {{ 'liked' if post.liked else '' }}" data-post-id="{{ post.id }}" aria-label="Páči sa mi to">
-           <span class="like-emoji">{{ '❤️' if post.liked else '🤍' }}</span>
-         </button>
-         <span id="likeCount" class="like-count">{{ post.like_count or 0 }}</span>
-        </div>
-    </div>
-  </section>
-
-  <!-- Comments Section -->
-  <section class="card">
-    <header class="section-header">
-      <h2>Komentáre</h2>
-      <p class="muted">Čo si o tom myslíš?</p>
-    </header>
-    
-    <ul class="comment-list">
-      {% for c in comments %}
-        <li>
-          <strong>{{ c.author }}</strong>
-          <span class="muted"> • {{ c.created_at }}</span>
-          <div style="margin-top: var(--space-xs);">{{ c.text }}</div>
-        </li>
-      {% else %}
-        <li class="muted text-center" style="padding: var(--space-lg);">
-          Zatiaľ žiadne komentáre — buď prvý, kto komentuje!
-        </li>
-      {% endfor %}
-    </ul>
-
-    <form class="comment-form" method="post" action="{{ url_for('add_comment', post_id=post.id) }}">
-      <div class="form-group">
-        <textarea name="text" rows="3" placeholder="Napíš komentár..." required style="margin-bottom: var(--space-md);"></textarea>
+      <div class="post-actions" style="display:flex; align-items:center; gap:.5rem; margin-top:.5rem;">
+        <button id="likeBtn" class="btn btn-ghost like-btn {{ 'liked' if post.liked else '' }}" data-post-id="{{ post.id }}" aria-label="Páči sa mi to">
+          <span class="like-emoji">{{ '❤️' if post.liked else '🤍' }}</span>
+        </button>
+        <span id="likeCount" class="like-count">{{ post.like_count or 0 }}</span>
       </div>
-      <button type="submit" class="btn btn-primary">Odoslať komentár</button>
-    </form>
+    </div>
+
+    <div class="comment-section-inline">
+      <header class="section-header">
+        <h2>Komentáre</h2>
+        <p class="muted">Čo si o tom myslíš?</p>
+      </header>
+      
+      <ul class="comment-list">
+        {% for c in comments %}
+          <li>
+            <strong>{{ c.author }}</strong>
+            <span class="muted"> • {{ c.created_at }}</span>
+            <div style="margin-top: var(--space-xs);">{{ c.text }}</div>
+          </li>
+        {% else %}
+          <li class="muted text-center" style="padding: var(--space-lg);">
+            Zatiaľ žiadne komentáre — buď prvý, kto komentuje!
+          </li>
+        {% endfor %}
+      </ul>
+
+      <form class="comment-form" method="post" action="{{ url_for('add_comment', post_id=post.id) }}">
+        <div class="form-group" style="width:100%;">
+          <textarea class="comment-input comment-textarea" name="text" placeholder="Napíš komentár..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Odoslať komentár</button>
+      </form>
+    </div>
   </section>
 {% endblock %}

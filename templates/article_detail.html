@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ article.title }} — GardenCircle{% endblock %}
+
+{% block content %}
+<section class="card article-detail-card">
+  <div class="article-detail-header">
+    <a class="btn small article-back-link" href="{{ url_for('articles') }}">← Späť na všetky články</a>
+  </div>
+  <article class="article-detail">
+    <header>
+      <p class="muted">{{ article.created_at }}</p>
+      <h1>{{ article.title }}</h1>
+    </header>
+    {% set resolved_src = None %}
+    {% if article.image_path %}
+      {% if article.image_path.startswith('http') %}
+        {% set resolved_src = article.image_path %}
+      {% elif article.image_path.startswith('/static/') %}
+        {% set resolved_src = article.image_path %}
+      {% else %}
+        {% set resolved_src = url_for('static', filename=article.image_path) %}
+      {% endif %}
+    {% endif %}
+    {% if resolved_src %}
+      <div class="article-detail-image">
+        <img src="{{ resolved_src }}" alt="{{ article.title }}" loading="lazy">
+      </div>
+    {% endif %}
+    <div class="article-detail-body">
+      {{ article.content | replace('\n', '<br>') | safe }}
+    </div>
+  </article>
+</section>
+{% endblock %}
+
