@@ -10,6 +10,7 @@
   <div class="admin-mode-picker">
     <button class="admin-mode-btn active" data-target="articles-section">📚 Pridať článok</button>
     <button class="admin-mode-btn" data-target="posts-section">🗑️ Správa príspevkov</button>
+    <button class="admin-mode-btn" data-target="users-section">👥 Profily používateľov</button>
   </div>
 
   <div class="admin-panel-section" id="articles-section">
@@ -91,6 +92,37 @@
     </form>
 
     <p class="muted small-text">Novinky sú načítavané automaticky z NewsAPI.org.</p>
+  </div>
+
+  <div class="admin-panel-section hidden" id="users-section">
+    <h3>Profily používateľov</h3>
+    <p class="muted">Prezri si účty komunity a podľa potreby ich vymaž.</p>
+
+    <div class="admin-post-list">
+      {% for user in users %}
+        <div class="admin-post-row">
+          <div class="admin-post-info">
+            <div class="admin-post-meta">
+              <strong>@{{ user.username }}</strong>
+              <span>{{ user.email }}</span>
+              <span>{{ user.created_at }}</span>
+            </div>
+            <p class="small-text muted">{{ user.bio or 'Žiadny bio text.' }}</p>
+          </div>
+          {% if user.is_admin %}
+            <span class="muted small-text">Admin</span>
+          {% else %}
+            <form method="post" action="/admin/delete-user">
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <button class="btn danger small" type="submit">Vymazať</button>
+            </form>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="muted small-text">Žiadni používatelia na zobrazenie.</p>
+      {% endfor %}
+    </div>
+    <p class="muted small-text">Admin účty nie je možné odstrániť priamo z panelu.</p>
   </div>
 </section>
 

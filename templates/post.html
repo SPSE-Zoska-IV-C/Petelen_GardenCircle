@@ -30,9 +30,19 @@
     </div>
 
     <div class="comment-section-inline">
-      <header class="section-header">
-        <h2>Komentáre</h2>
-        <p class="muted">Čo si o tom myslíš?</p>
+      <header class="section-header" style="display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-md); justify-content:space-between;">
+        <div>
+          <h2>Komentáre</h2>
+          <p class="muted">Čo si o tom myslíš?</p>
+        </div>
+        <div class="auto-answer-controls">
+          <button type="button" class="btn btn-ghost small" id="autoAnswerToggle" aria-haspopup="true" aria-expanded="false">🤖 Získať AI odpoveď</button>
+          <div id="autoAnswerMenu" class="auto-answer-menu" hidden>
+            <button type="button" class="btn btn-ghost small auto-answer-option" data-length="short" data-post-id="{{ post.id }}">⚡ Krátka odpoveď</button>
+            <button type="button" class="btn btn-ghost small auto-answer-option" data-length="long" data-post-id="{{ post.id }}">📚 Dlhšia odpoveď</button>
+          </div>
+          <span class="muted small-text" id="autoAnswerStatus" hidden>Vyber dĺžku odpovede.</span>
+        </div>
       </header>
       
       <ul class="comment-list">
@@ -57,4 +67,118 @@
       </form>
     </div>
   </section>
+
+  <script>
+    const autoAnswerToggle = document.getElementById('autoAnswerToggle');
+    const autoAnswerMenu = document.getElementById('autoAnswerMenu');
+    const autoAnswerStatus = document.getElementById('autoAnswerStatus');
+    const commentList = document.querySelector('.comment-list');
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.innerText = text;
+      return div.innerHTML;
+    }
+
+    function appendComment(author, text) {
+      if (!commentList) return;
+      const emptyState = commentList.querySelector('.muted.text-center');
+      if (emptyState) {
+        emptyState.remove();
+      }
+
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <strong>${escapeHtml(author)}</strong>
+        <span class="muted"> • práve teraz</span>
+        <div style="margin-top: var(--space-xs);">${escapeHtml(text)}</div>
+      `;
+      commentList.appendChild(li);
+    }
+
+    function setStatus(message, show = true) {
+      if (!autoAnswerStatus) return;
+      autoAnswerStatus.textContent = message;
+      autoAnswerStatus.hidden = !show;
+    }
+
+    function openAnswerMenu() {
+      if (!autoAnswerMenu || !autoAnswerToggle) return;
+      autoAnswerMenu.hidden = false;
+      autoAnswerMenu.dataset.open = 'true';
+      autoAnswerToggle.setAttribute('aria-expanded', 'true');
+      setStatus('Vyber dĺžku odpovede.', true);
+    }
+
+    function closeAnswerMenu() {
+      if (!autoAnswerMenu || !autoAnswerToggle) return;
+      autoAnswerMenu.hidden = true;
+      autoAnswerMenu.dataset.open = 'false';
+      autoAnswerToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    async function requestAutoAnswer(postId, length, triggerBtn) {
+      if (triggerBtn) {
+        triggerBtn.disabled = true;
+      }
+      if (autoAnswerToggle) {
+        autoAnswerToggle.disabled = true;
+      }
+      setStatus('AI spracováva odpoveď…');
+
+      try {
+        const response = await fetch(`/api/posts/${postId}/answer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ length })
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Nepodarilo sa načítať odpoveď.');
+        }
+
+        appendComment(data.author || 'GardenCircle Guide', data.text || '');
+        setStatus('Odpoveď AI bola pridaná.');
+        closeAnswerMenu();
+      } catch (error) {
+        console.error(error);
+        setStatus(error.message || 'AI odpoveď sa nepodarila.');
+      } finally {
+        if (triggerBtn) {
+          triggerBtn.disabled = false;
+        }
+        if (autoAnswerToggle) {
+          autoAnswerToggle.disabled = false;
+        }
+      }
+    }
+
+    if (autoAnswerToggle && autoAnswerMenu) {
+      autoAnswerToggle.addEventListener('click', () => {
+        if (autoAnswerMenu.hidden) {
+          openAnswerMenu();
+        } else {
+          closeAnswerMenu();
+        }
+      });
+
+      document.addEventListener('click', (event) => {
+        if (autoAnswerMenu.hidden) return;
+        const target = event.target;
+        if (!autoAnswerMenu.contains(target) && target !== autoAnswerToggle) {
+          closeAnswerMenu();
+          setStatus('', false);
+        }
+      });
+
+      autoAnswerMenu.querySelectorAll('.auto-answer-option').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const length = btn.dataset.length || 'short';
+          const postId = btn.dataset.postId;
+          requestAutoAnswer(postId, length, btn);
+        });
+      });
+    }
+  </script>
 {% endblock %}

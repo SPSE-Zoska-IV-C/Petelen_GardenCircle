@@ -1,5 +1,6 @@
 from flask import render_template, request, redirect, url_for, jsonify, session, send_from_directory, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from datetime import datetime
 import os
 
 from .database import get_db
@@ -369,6 +370,84 @@ def register_routes(app):
             return jsonify({"id": cur.lastrowid, "author": current_user.username, "text": text}), 201
         return redirect(url_for('post_detail', post_id=post_id))
 
+    @app.route("/api/posts/<int:post_id>/answer", methods=["POST"])
+    @login_required
+    def auto_answer_post(post_id: int):
+        """Generate a concise AI helper reply for a post and save it as a comment."""
+        db = get_db()
+        post = db.execute(
+            "SELECT id, author, content FROM posts WHERE id=?",
+            (post_id,)
+        ).fetchone()
+        if not post:
+            return jsonify({"error": "Príspevok sa nenašiel."}), 404
+
+        api_key = os.getenv("GOOGLE_AI_STUDIO_API_KEY")
+        if not api_key:
+            return jsonify({"error": "AI nie je nastavená. Skontroluj API kľúč."}), 500
+        if not GEMINI_AVAILABLE:
+            return jsonify({"error": "Chýba balíček google-generativeai."}), 500
+
+        genai.configure(api_key=api_key)
+        model_names = [
+            'gemini-2.5-flash',
+            'gemini-2.5-pro-preview-05-06',
+            'gemini-2.5-flash-preview-05-20',
+            'gemini-2.5-pro-preview-03-25',
+            'gemini-pro',
+        ]
+
+        payload = request.get_json(silent=True) or {}
+        answer_length = (payload.get("length") or "short").lower()
+        if answer_length not in ("short", "long"):
+            answer_length = "short"
+
+        if answer_length == "short":
+            instructions = "Odpovedaj maximálne v 2 krátkych vetách."
+            max_chars = 400
+        else:
+            instructions = "Môžeš použiť 4–5 viet s praktickými tipmi."
+            max_chars = 900
+
+        system_prompt = f"""You are GardenCircle Guide, a Slovak nature mentor.
+        {instructions}
+        Ostaň vecný, priateľský, pripomeň bezpečnosť alebo legálne zásady, ak je to vhodné.
+        Ak zadanie nie je jasné, ponúkni všeobecný tip a vyzvi používateľa, aby spresnil otázku.
+        Text príspevku:
+        {{post_content}}
+        Vytvor odpoveď."""
+
+        full_prompt = system_prompt.format(post_content=post["content"])
+        response = None
+        last_error = None
+        for model_name in model_names:
+            try:
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(full_prompt)
+                break
+            except Exception as e:
+                last_error = str(e)
+                continue
+
+        if response is None or not getattr(response, "text", "").strip():
+            return jsonify({"error": f"AI odpoveď sa nepodarila: {last_error or 'neznáma chyba'}"}), 500
+
+        reply = response.text.strip()
+        reply = reply[:max_chars]
+
+        cur = db.execute(
+            "INSERT INTO comments(post_id, author_id, author, text) VALUES(?, ?, ?, ?)",
+            (post_id, None, "GardenCircle Guide", reply)
+        )
+        db.commit()
+
+        return jsonify({
+            "id": cur.lastrowid,
+            "author": "GardenCircle Guide",
+            "text": reply,
+            "created_at": datetime.utcnow().isoformat(timespec="seconds")
+        })
+
     @app.route("/api/posts/<int:post_id>", methods=["DELETE"])
     @login_required
     def delete_post(post_id: int):
@@ -514,11 +593,18 @@ def register_routes(app):
             model = None
             last_error = None
             
-            # Create a system prompt for plant-related assistance
-            system_prompt = """You are a helpful AI assistant specialized in plants and gardening. 
-            You provide expert advice on plant care, gardening tips, plant identification, and troubleshooting plant problems.
-            Be friendly, informative, and provide practical advice. If you don't know something, admit it.
-            Always respond in Slovak language."""
+            # Create a system prompt for nature/outdoor assistance
+            system_prompt = """You are GardenCircle Guide, a friendly AI expert on všetko zo sveta prírody.
+            Rozprávaj sa po slovensky a pokrývaj:
+            - rastliny a záhradu
+            - huby a ich bezpečný zber
+            - zvieratá, stopovanie, voľne žijúcu zver
+            - počasie, klímu, ekológiu a environmentálne témy
+            - turistiku, kempovanie, udržateľné pobyty v prírode a ochranu životného prostredia.
+            Buď povzbudivý, poskytuj praktické tipy, zdôrazni bezpečnosť, legislatívu a etiku.
+            Ak si nie si istý, daj všeobecné odporúčania alebo bezpečnostné rady a navrhni príbuznú prírodnú tému.
+            Odmietni len otázky úplne mimo prírody alebo nebezpečné/ilegálne požiadavky; aj vtedy odpovedz zdvorilo a ponúkni súvisiacu prírodnú oblasť.
+            Vždy podporuj udržateľné a legálne správanie."""
             
             # Combine system prompt with user message
             full_prompt = f"{system_prompt}\n\nUser question: {message}\n\nAssistant:"
@@ -637,11 +723,31 @@ def register_routes(app):
         rows = db.execute(
             "SELECT id, author, content, created_at FROM posts ORDER BY created_at DESC LIMIT 20"
         ).fetchall()
+        user_rows = db.execute(
+            """
+            SELECT id, username, email, bio, profile_image, created_at, COALESCE(is_admin, 0) as is_admin
+            FROM users
+            ORDER BY created_at DESC
+            LIMIT 50
+            """
+        ).fetchall()
         recent_posts = [
             {"id": r[0], "author": r[1], "content": r[2], "created_at": r[3]}
             for r in rows
         ]
-        return render_template('admin_panel.html', recent_posts=recent_posts)
+        users = [
+            {
+                "id": u["id"],
+                "username": u["username"],
+                "email": u["email"],
+                "bio": u["bio"],
+                "profile_image": u["profile_image"],
+                "created_at": u["created_at"],
+                "is_admin": bool(u["is_admin"]),
+            }
+            for u in user_rows
+        ]
+        return render_template('admin_panel.html', recent_posts=recent_posts, users=users)
 
     @app.route('/admin/upload', methods=['POST'])
     def admin_upload():
@@ -688,6 +794,36 @@ def register_routes(app):
         db.execute("DELETE FROM comments WHERE post_id=?", (post_id,))
         db.execute("DELETE FROM likes WHERE post_id=?", (post_id,))
         db.execute("DELETE FROM posts WHERE id=?", (post_id,))
+        db.commit()
+        return redirect(url_for('admin_panel'))
+
+    @app.route('/admin/delete-user', methods=['POST'])
+    def admin_delete_user():
+        if not session.get('is_admin'):
+            return redirect(url_for('admin_login'))
+        user_id = request.form.get('user_id')
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            return redirect(url_for('admin_panel'))
+
+        db = get_db()
+        user = db.execute(
+            "SELECT id, COALESCE(is_admin, 0) as is_admin FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+
+        # Prevent deleting missing or admin accounts
+        if not user or user["is_admin"]:
+            return redirect(url_for('admin_panel'))
+
+        # Clean up related content before removing the user entry
+        db.execute("DELETE FROM comments WHERE author_id=?", (user_id,))
+        db.execute("DELETE FROM posts WHERE author_id=?", (user_id,))
+        db.execute("DELETE FROM follows WHERE follower_id=? OR followed_id=?", (user_id, user_id))
+        db.execute("DELETE FROM likes WHERE user_id=?", (user_id,))
+        db.execute("DELETE FROM chat_messages WHERE user_id=?", (user_id,))
+        db.execute("DELETE FROM users WHERE id=?", (user_id,))
         db.commit()
         return redirect(url_for('admin_panel'))
 

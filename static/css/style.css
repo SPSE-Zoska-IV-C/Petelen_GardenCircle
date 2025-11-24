@@ -12,6 +12,8 @@
   --light-green: #f7fdfb;
   --mint: #d4f4e7;
   --sage: #a8c5a0;
+  --border-soft-green: rgba(6, 79, 59, 0.7);
+  --border-soft-green-strong: rgba(6, 79, 59, 0.9);
   
   --text-dark: #1a3528;
   --text-medium: #4a6b5f;
@@ -907,6 +909,46 @@ textarea {
   padding: var(--space-2xl);
 }
 
+.auto-answer-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-xs);
+  position: relative;
+}
+
+.auto-answer-menu {
+  position: absolute;
+  top: calc(100% + var(--space-xs));
+  right: 0;
+  display: none;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 220px;
+  padding: var(--space-sm);
+  background: rgba(248, 253, 251, 0.98);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-soft-green);
+  box-shadow: var(--shadow-lg);
+  z-index: 5;
+}
+
+.auto-answer-menu[data-open="true"] {
+  display: flex;
+  animation: fadeSlideIn 0.2s ease forwards;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .comment-section-inline .comment-list {
   margin: 0;
 }
@@ -1325,6 +1367,27 @@ textarea {
 
 .admin-panel-section.hidden {
   display: none;
+}
+
+/* ============================================
+   Subtle Green Container Borders
+   ============================================ */
+
+.card,
+.post-card,
+.post-detail-card .post-card,
+.comment-section-inline,
+.post-card-modern,
+.create-post-card,
+.admin-panel-card,
+.admin-panel-section,
+.feature-item,
+.article-card,
+.post-form {
+  border: 2.5px solid var(--border-soft-green);
+  background-color: rgba(248, 253, 251, 0.97);
+  box-shadow: 0 14px 32px rgba(9, 60, 48, 0.14);
+  backdrop-filter: blur(8px);
 }
 
 .admin-form {
