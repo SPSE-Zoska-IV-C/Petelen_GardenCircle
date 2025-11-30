@@ -539,12 +539,108 @@
 
     @media (max-width: 768px) {
       .chat-window {
-        min-height: 300px;
-        max-height: 400px;
+        min-height: calc(100vh - 400px);
+        max-height: calc(100vh - 300px);
+        padding: var(--space-md);
+        margin-bottom: var(--space-md);
+        border-radius: var(--radius-lg);
+      }
+
+      .chat-bubble {
+        max-width: 85%;
+        padding: var(--space-md);
+        font-size: var(--font-size-base);
+      }
+
+      .chat-bubble.chat-user {
+        max-width: 80%;
+      }
+
+      .chat-bubble.chat-bot {
+        max-width: 85%;
+      }
+
+      .chat-form {
+        margin-bottom: calc(80px + var(--space-md)); /* Space for bottom nav */
+      }
+
+      .chat-input-wrapper {
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+
+      .chat-input-wrapper input {
+        min-height: 48px;
+        font-size: 16px; /* Prevent zoom on iOS */
+        padding: var(--space-md);
+      }
+
+      .chat-input-wrapper button {
+        width: 100%;
+        min-height: 48px;
+        padding: var(--space-md);
+      }
+
+      .chat-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+      }
+
+      .chat-actions button {
+        width: 100%;
+        min-height: 44px;
+      }
+
+      .message-content {
+        font-size: var(--font-size-base);
+        line-height: 1.6;
+      }
+
+      .markdown-content {
+        font-size: var(--font-size-base);
+      }
+
+      .markdown-content h1 {
+        font-size: var(--font-size-xl);
+      }
+
+      .markdown-content h2 {
+        font-size: var(--font-size-lg);
+      }
+
+      .markdown-content h3 {
+        font-size: var(--font-size-base);
+      }
+
+      .markdown-content pre {
+        padding: var(--space-md);
+        font-size: var(--font-size-sm);
+        overflow-x: auto;
+      }
+
+      .markdown-content code {
+        font-size: 0.85em;
+        padding: 0.15em 0.3em;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chat-window {
+        min-height: calc(100vh - 350px);
+        max-height: calc(100vh - 250px);
+        padding: var(--space-sm);
       }
 
       .chat-bubble {
         max-width: 90%;
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--font-size-sm);
+      }
+
+      .message-header {
+        font-size: var(--font-size-xs);
       }
     }
   </style>

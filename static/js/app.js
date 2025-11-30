@@ -1,6 +1,21 @@
-(() => {
+// Wait for DOM to be ready
+(function() {
+  'use strict';
+  
   const $ = (s, root=document) => root.querySelector(s);
   const $$ = (s, root=document) => Array.from(root.querySelectorAll(s));
+  
+  // Initialize all components when DOM is ready
+  function initAll() {
+    initMenuToggle();
+    initThemeToggle();
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+  } else {
+    initAll();
+  }
   
   // Performance helpers
   function throttle(func, wait) {
@@ -27,42 +42,137 @@
     };
   }
   
-  // Menu toggle
-  const menuToggle = $("#menuToggle");
-  const dropdownMenu = $("#dropdownMenu");
-  if (menuToggle && dropdownMenu) {
-    menuToggle.addEventListener('click', (e) => {
-      e.stopPropagation();
+  // Initialize menu toggle when DOM is ready
+  function initMenuToggle() {
+    const menuToggle = document.getElementById('menuToggle');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    
+    if (!menuToggle || !dropdownMenu) {
+      console.warn('Menu toggle elements not found', { menuToggle, dropdownMenu });
+      return;
+    }
+    
+    console.log('Menu toggle initialized', { menuToggle, dropdownMenu });
+    
+    const toggleMenu = (e) => {
+      console.log('Toggle menu called', e);
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
       const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
-      menuToggle.setAttribute('aria-expanded', (!isExpanded).toString());
-      dropdownMenu.classList.toggle('show', !isExpanded);
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!menuToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
-        menuToggle.setAttribute('aria-expanded', 'false');
+      const newState = !isExpanded;
+      
+      console.log('Menu state:', { isExpanded, newState });
+      
+      menuToggle.setAttribute('aria-expanded', newState.toString());
+      
+      if (newState) {
+        dropdownMenu.classList.add('show');
+        console.log('Menu opened, classes:', dropdownMenu.className);
+      } else {
         dropdownMenu.classList.remove('show');
+        console.log('Menu closed, classes:', dropdownMenu.className);
+      }
+      
+      // Add visual feedback
+      menuToggle.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        menuToggle.style.transform = '';
+      }, 150);
+    };
+
+    // Click event
+    menuToggle.addEventListener('click', (e) => {
+      console.log('Menu toggle clicked');
+      toggleMenu(e);
+    });
+    
+    // Touch events for mobile
+    menuToggle.addEventListener('touchend', (e) => {
+      console.log('Menu toggle touched');
+      e.preventDefault();
+      toggleMenu(e);
+    }, { passive: false });
+    
+    // Visual feedback on touch
+    menuToggle.addEventListener('touchstart', () => {
+      menuToggle.style.opacity = '0.7';
+    }, { passive: true });
+    
+    menuToggle.addEventListener('touchend', () => {
+      setTimeout(() => {
+        menuToggle.style.opacity = '';
+      }, 150);
+    }, { passive: true });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (menuToggle && dropdownMenu) {
+        const target = e.target;
+        if (!menuToggle.contains(target) && !dropdownMenu.contains(target)) {
+          menuToggle.setAttribute('aria-expanded', 'false');
+          dropdownMenu.classList.remove('show');
+        }
       }
     });
 
-    dropdownMenu.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('click', () => {
-        menuToggle.setAttribute('aria-expanded', 'false');
-        dropdownMenu.classList.remove('show');
+    // Close menu when clicking menu items (but let them execute first)
+    const menuItems = dropdownMenu.querySelectorAll('a, button');
+    menuItems.forEach(el => {
+      el.addEventListener('click', (e) => {
+        // Don't prevent default - let the link/button work
+        setTimeout(() => {
+          if (menuToggle && dropdownMenu) {
+            menuToggle.setAttribute('aria-expanded', 'false');
+            dropdownMenu.classList.remove('show');
+          }
+        }, 100);
       });
     });
+    
+    // Close menu on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menuToggle && dropdownMenu) {
+        const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
+        if (isExpanded) {
+          menuToggle.setAttribute('aria-expanded', 'false');
+          dropdownMenu.classList.remove('show');
+        }
+      }
+    });
+    
+    // Ensure button is clickable
+    menuToggle.style.pointerEvents = 'auto';
+    menuToggle.style.cursor = 'pointer';
+    menuToggle.setAttribute('tabindex', '0');
+    
+    // Ensure dropdown is properly positioned
+    dropdownMenu.style.zIndex = '1004';
+    dropdownMenu.style.pointerEvents = 'auto';
+  }
+  
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMenuToggle);
+  } else {
+    // DOM is already ready
+    initMenuToggle();
   }
 
   // Theme toggle
-  const themeToggle = $("#themeToggle");
-  if (themeToggle) {
-    const saved = localStorage.getItem('theme') || 'light';
-    document.documentElement.dataset.theme = saved;
-    themeToggle.addEventListener('click', () => {
-      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = next;
-      localStorage.setItem('theme', next);
-    });
+  function initThemeToggle() {
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+      const saved = localStorage.getItem('theme') || 'light';
+      document.documentElement.dataset.theme = saved;
+      themeToggle.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem('theme', next);
+      });
+    }
   }
 
   // Back to top - throttled scroll
@@ -416,6 +526,203 @@
       if (f2 && typeof data.following_count === 'number') f2.textContent = `Sleduje: ${data.following_count}`;
     });
   }
+})();
+
+// ============================================
+// Mobile-Specific Enhancements
+// ============================================
+
+(() => {
+  // Prevent double-tap zoom on buttons and links
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, false);
+
+  // Smooth scroll for mobile
+  if ('scrollBehavior' in document.documentElement.style) {
+    // Native smooth scroll supported
+  } else {
+    // Fallback for older browsers
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href !== '#' && href.length > 1) {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      });
+    });
+  }
+
+  // Bottom navigation active state management
+  const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+  const currentPath = window.location.pathname;
+  
+  bottomNavItems.forEach(item => {
+    const href = item.getAttribute('href');
+    if (href && currentPath.includes(href.split('/').pop())) {
+      item.classList.add('active');
+    }
+    
+    // Add touch feedback
+    item.addEventListener('touchstart', function() {
+      this.style.opacity = '0.7';
+    });
+    
+    item.addEventListener('touchend', function() {
+      setTimeout(() => {
+        this.style.opacity = '';
+      }, 150);
+    });
+  });
+
+  // Optimize images for mobile (lazy loading already handled)
+  if ('IntersectionObserver' in window) {
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          if (img.dataset.src) {
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+            observer.unobserve(img);
+          }
+        }
+      });
+    });
+
+    document.querySelectorAll('img[data-src]').forEach(img => {
+      imageObserver.observe(img);
+    });
+  }
+
+  // Prevent pull-to-refresh on mobile (optional - can be removed if you want native behavior)
+  let touchStartY = 0;
+  document.addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    const touchY = e.touches[0].clientY;
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // Prevent pull-to-refresh when at top and scrolling down
+    if (scrollTop === 0 && touchY > touchStartY) {
+      // Allow small movement for better UX
+      if (touchY - touchStartY > 50) {
+        e.preventDefault();
+      }
+    }
+  }, { passive: false });
+
+  // Add haptic feedback for actions (if supported)
+  const hapticFeedback = (type = 'light') => {
+    if ('vibrate' in navigator) {
+      const patterns = {
+        light: 10,
+        medium: 20,
+        heavy: 30
+      };
+      navigator.vibrate(patterns[type] || 10);
+    }
+  };
+
+  // Add haptic feedback to important actions
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('.like-btn-modern, .action-btn, .btn-primary, .publish-btn');
+    if (target) {
+      hapticFeedback('light');
+    }
+  });
+
+  // Optimize scroll performance on mobile
+  let ticking = false;
+  const handleScroll = () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        // Update back to top button visibility
+        const backToTop = document.getElementById('backToTop');
+        if (backToTop) {
+          if (window.scrollY > 600) {
+            backToTop.classList.add('show');
+          } else {
+            backToTop.classList.remove('show');
+          }
+        }
+        ticking = false;
+      });
+      ticking = true;
+    }
+  };
+
+  window.addEventListener('scroll', handleScroll, { passive: true });
+
+  // Improve form input experience on mobile
+  const inputs = document.querySelectorAll('input, textarea');
+  inputs.forEach(input => {
+    // Prevent zoom on focus (iOS)
+    if (input.type !== 'date' && input.type !== 'time') {
+      const fontSize = window.getComputedStyle(input).fontSize;
+      if (parseFloat(fontSize) < 16) {
+        input.style.fontSize = '16px';
+      }
+    }
+
+    // Add better focus handling
+    input.addEventListener('focus', function() {
+      // Scroll input into view with some offset
+      setTimeout(() => {
+        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    });
+  });
+
+  // Handle orientation change
+  let resizeTimer;
+  window.addEventListener('orientationchange', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      // Recalculate layouts after orientation change
+      window.dispatchEvent(new Event('resize'));
+    }, 100);
+  });
+
+  // Add swipe gestures for cards (optional enhancement)
+  let touchStartX = 0;
+  let touchStartY = 0;
+  
+  document.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (!touchStartX || !touchStartY) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    
+    const diffX = touchStartX - touchEndX;
+    const diffY = touchStartY - touchEndY;
+    
+    // Reset
+    touchStartX = 0;
+    touchStartY = 0;
+    
+    // Detect swipe (only if significant and mostly horizontal)
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+      // Swipe detected - could be used for navigation or actions
+      // This is a placeholder for future swipe functionality
+    }
+  }, { passive: true });
 })();
 
 

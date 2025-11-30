@@ -2,8 +2,12 @@
 <html lang="sk">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
   <meta name="description" content="GardenCircle - Moderná komunita pre milovníkov rastlín a prírody" />
+  <meta name="theme-color" content="#16a085" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="GardenCircle" />
   <title>{% block title %}GardenCircle{% endblock %}</title>
   
   <!-- Google Fonts - Premium Typography -->
@@ -63,6 +67,32 @@
       <span class="muted">Jednoduchá komunita pre milovníkov rastlín</span>
     </div>
   </footer>
+
+  <!-- Bottom Navigation - Mobile Only -->
+  {% if current_user.is_authenticated %}
+  <nav class="bottom-nav" aria-label="Mobilná navigácia">
+    <a href="{{ url_for('posts_page') }}" class="bottom-nav-item {% if request.endpoint == 'posts_page' %}active{% endif %}" aria-label="Príspevky">
+      <span class="bottom-nav-icon">📝</span>
+      <span class="bottom-nav-label">Príspevky</span>
+    </a>
+    <a href="{{ url_for('articles') }}" class="bottom-nav-item {% if request.endpoint == 'articles' %}active{% endif %}" aria-label="Články">
+      <span class="bottom-nav-icon">📚</span>
+      <span class="bottom-nav-label">Články</span>
+    </a>
+    <a href="{{ url_for('news') }}" class="bottom-nav-item {% if request.endpoint == 'news' %}active{% endif %}" aria-label="Novinky">
+      <span class="bottom-nav-icon">🌍</span>
+      <span class="bottom-nav-label">Novinky</span>
+    </a>
+    <a href="{{ url_for('chatbot_placeholder') }}" class="bottom-nav-item {% if request.endpoint == 'chatbot_placeholder' %}active{% endif %}" aria-label="Chatbot">
+      <span class="bottom-nav-icon">🤖</span>
+      <span class="bottom-nav-label">Chatbot</span>
+    </a>
+    <a href="{{ url_for('user_profile', username=current_user.username) }}" class="bottom-nav-item {% if request.endpoint == 'user_profile' %}active{% endif %}" aria-label="Profil">
+      <span class="bottom-nav-icon">👤</span>
+      <span class="bottom-nav-label">Profil</span>
+    </a>
+  </nav>
+  {% endif %}
 
   <!-- Back to Top Button -->
   <button id="backToTop" class="back-to-top" aria-label="Späť hore">↑</button>
