@@ -1,20 +1,20 @@
-<!doctype html>
-<html lang="sk">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GardenCircle — stránka nenájdená</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-  <main class="container">
-    <section class="card">
-      <h1>404</h1>
-      <p class="muted">Stránka sa nenašla.</p>
-      <p><a class="btn primary" href="{{ url_for('home') }}">Späť domov</a></p>
-    </section>
-  </main>
-</body>
-</html>
+{% extends 'base.html' %}
 
+{% block body_class %}bg-leaf{% endblock %}
 
+{% block title %}GardenCircle — Stránka nenájdená{% endblock %}
+
+{% block content %}
+  <section class="hero card hero-card text-center">
+    <div class="hero-inner">
+      <div>
+        <h1 style="font-size: 5rem; font-weight: 800; margin-bottom: var(--space-md);">404</h1>
+        <h2 style="font-size: var(--font-size-2xl); margin-bottom: var(--space-lg);">Stránka sa nenašla</h3>
+        <p class="muted" style="font-size: var(--font-size-lg); margin-bottom: var(--space-xl);">
+          Ospravedlňujeme sa, stránka, ktorú hľadáš, neexistuje alebo bola presunutá.
+        </p>
+        <a href="{{ url_for('home') }}" class="btn btn-primary">Späť domov</a>
+      </div>
+    </div>
+  </section>
+{% endblock %}

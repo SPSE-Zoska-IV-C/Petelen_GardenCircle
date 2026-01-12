@@ -1,15 +1,26 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="sk">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+  <meta name="description" content="GardenCircle - Moderná komunita pre milovníkov rastlín a prírody" />
+  <meta name="theme-color" content="#16a085" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="GardenCircle" />
   <title>{% block title %}GardenCircle{% endblock %}</title>
+  
+  <!-- Google Fonts - Premium Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="{% block body_class %}{% endblock %}">
+  
+  <!-- Header -->
   <header class="site-header">
     <div class="container header-inner">
       <a class="brand" href="{{ url_for('home') }}">
@@ -19,33 +30,74 @@
           <p class="tagline">Miesto, kde rastliny a ľudia rastú spolu</p>
         </div>
       </a>
+      
       <nav class="main-nav" aria-label="Hlavná navigácia">
-        <a href="{{ url_for('home') }}">Domov</a>
-        <a href="{{ url_for('posts_page') }}">Príspevky</a>
-        <a href="{{ url_for('articles') }}">Články</a>
-        <a href="{{ url_for('news') }}">Novinky</a>
-        <a href="{{ url_for('about') }}">O projekte</a>
-        <a href="{{ url_for('contact') }}">Kontakt</a>
-        <a class="pill" href="{{ url_for('chatbot_placeholder') }}">Chatbot</a>
-        <button id="themeToggle" class="btn small" type="button" title="Prepínač témy">🌓</button>
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('posts_page') }}">📝 Príspevky</a>
+          <a href="{{ url_for('articles') }}">📚 Články</a>
+          <a href="{{ url_for('news') }}">🌍 Novinky</a>
+          <a href="{{ url_for('chatbot_placeholder') }}">🤖 Chatbot</a>
+          <a href="{{ url_for('user_profile', username=current_user.username) }}">👤 {{ current_user.username }}</a>
+        {% else %}
+          <a href="{{ url_for('login') }}">🔑 Prihlásiť</a>
+          <a href="{{ url_for('register') }}">✨ Registrácia</a>
+        {% endif %}
+        <button id="menuToggle" type="button" class="menu-toggle" aria-label="Menu" aria-expanded="false">
+          <span class="menu-icon">☰</span>
+        </button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('logout') }}">🚪 Odhlásiť</a>
+          {% endif %}
+          <button id="themeToggle" type="button" aria-label="Prepínač témy">🌓 Téma</button>
+        </div>
       </nav>
     </div>
   </header>
 
+  <!-- Main Content -->
   <main class="container">
     {% block content %}{% endblock %}
   </main>
 
+  <!-- Footer -->
   <footer class="site-footer">
     <div class="container footer-inner">
-      <small>© {{ 2025 }} GardenCircle</small>
+      <small>© 2025 GardenCircle</small>
       <span class="muted">Jednoduchá komunita pre milovníkov rastlín</span>
     </div>
   </footer>
 
+  <!-- Bottom Navigation - Mobile Only -->
+  {% if current_user.is_authenticated %}
+  <nav class="bottom-nav" aria-label="Mobilná navigácia">
+    <a href="{{ url_for('posts_page') }}" class="bottom-nav-item {% if request.endpoint == 'posts_page' %}active{% endif %}" aria-label="Príspevky">
+      <span class="bottom-nav-icon">📝</span>
+      <span class="bottom-nav-label">Príspevky</span>
+    </a>
+    <a href="{{ url_for('articles') }}" class="bottom-nav-item {% if request.endpoint == 'articles' %}active{% endif %}" aria-label="Články">
+      <span class="bottom-nav-icon">📚</span>
+      <span class="bottom-nav-label">Články</span>
+    </a>
+    <a href="{{ url_for('news') }}" class="bottom-nav-item {% if request.endpoint == 'news' %}active{% endif %}" aria-label="Novinky">
+      <span class="bottom-nav-icon">🌍</span>
+      <span class="bottom-nav-label">Novinky</span>
+    </a>
+    <a href="{{ url_for('chatbot_placeholder') }}" class="bottom-nav-item {% if request.endpoint == 'chatbot_placeholder' %}active{% endif %}" aria-label="Chatbot">
+      <span class="bottom-nav-icon">🤖</span>
+      <span class="bottom-nav-label">Chatbot</span>
+    </a>
+    <a href="{{ url_for('user_profile', username=current_user.username) }}" class="bottom-nav-item {% if request.endpoint == 'user_profile' %}active{% endif %}" aria-label="Profil">
+      <span class="bottom-nav-icon">👤</span>
+      <span class="bottom-nav-label">Profil</span>
+    </a>
+  </nav>
+  {% endif %}
+
+  <!-- Back to Top Button -->
   <button id="backToTop" class="back-to-top" aria-label="Späť hore">↑</button>
+
+  <!-- JavaScript -->
   <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </body>
 </html>
-
-

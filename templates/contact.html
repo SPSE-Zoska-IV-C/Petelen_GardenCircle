@@ -1,19 +1,37 @@
 {% extends 'base.html' %}
+
 {% block title %}GardenCircle — Kontakt{% endblock %}
+
 {% block content %}
-<section class="card">
-  <header class="section-header">
-    <h2>Kontakt</h2>
-    <p class="muted">Napíš nám svoj nápad alebo spätnú väzbu.</p>
-  </header>
-  <form class="post-form" onsubmit="event.preventDefault(); alert('Ďakujeme! Ozveme sa.'); this.reset();">
-    <input type="text" placeholder="Meno" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0;margin-bottom:.5rem">
-    <input type="email" placeholder="E-mail" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0;margin-bottom:.5rem">
-    <textarea rows="4" placeholder="Správa" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0"></textarea>
-    <div style="margin-top:.5rem"><button class="btn primary">Odoslať</button></div>
-  </form>
-  
-</section>
+  <section class="card">
+    <header class="section-header">
+      <h2>Kontakt</h2>
+      <p class="muted">Napíš nám svoj nápad alebo spätnú väzbu</p>
+    </header>
+    
+    <div style="max-width: 600px; margin: 0 auto;">
+      <p style="margin-bottom: var(--space-xl); color: var(--text-medium); line-height: var(--line-height-relaxed);">
+        Máš otázku, návrh alebo spätnú väzbu? Radi ťa počúvame! Vyplň formulár nižšie a my sa ti ozveme čoskoro.
+      </p>
+      
+      <form class="post-form" onsubmit="event.preventDefault(); alert('Ďakujeme za vašu správu! Ozveme sa vám čoskoro.'); this.reset();">
+        <div class="form-group">
+          <label for="name">Meno</label>
+          <input type="text" id="name" name="name" placeholder="Vaše meno" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" name="email" placeholder="vas@email.sk" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="message">Správa</label>
+          <textarea id="message" name="message" rows="6" placeholder="Vaša správa..." required></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Odoslať správu</button>
+      </form>
+    </div>
+  </section>
 {% endblock %}
-
-

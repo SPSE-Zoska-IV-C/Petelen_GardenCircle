@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}GardenCircle — Upraviť profil{% endblock %}
+
+{% block content %}
+  <section class="card">
+    <header class="section-header">
+      <h2>Upraviť profil</h2>
+      <p class="muted">Aktualizuj svoje informácie</p>
+    </header>
+
+    <form method="post" action="{{ url_for('edit_profile') }}" enctype="multipart/form-data" style="max-width: 600px;">
+      <div class="form-group">
+        <label for="bio">Bio</label>
+        <textarea id="bio" name="bio" rows="4" placeholder="Napíš niečo o sebe...">{{ current_user.bio }}</textarea>
+        <small class="muted">Môžeš zdieľať svoju lásku k rastlinám alebo svoje záujmy</small>
+      </div>
+
+      <div class="form-group">
+        <label for="profile_image">Profilový obrázok (URL)</label>
+        <input type="url" id="profile_image" name="profile_image" placeholder="URL obrázka" value="{{ current_user.profile_image or '' }}">
+        <small class="muted">Vlož URL obrázka (napr. z imgur.com alebo inej služby)</small>
+      </div>
+
+      <div class="form-group">
+        <label for="profile_image_file" style="cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-sm); padding: var(--space-md); background: var(--light-green); border-radius: var(--radius-lg); border: 2px dashed var(--mint); color: var(--primary-green); font-weight: 600;">
+          📷 Alebo nahraj obrázok z počítača
+        </label>
+        <input type="file" id="profile_image_file" name="profile_image_file" accept="image/*" style="display: none;" onchange="previewProfileImage(this)">
+        <div id="profilePreview" style="margin-top: var(--space-md); display: {% if current_user.profile_image %}block{% else %}none{% endif %};">
+          <img id="profilePreviewImg" src="{% if current_user.profile_image %}{{ url_for('static', filename=current_user.profile_image) }}{% endif %}" alt="Preview" style="width: 120px; height: 120px; border-radius: var(--radius-full); object-fit: cover; border: 3px solid var(--primary-green);">
+          <button type="button" onclick="removeProfileImage()" style="margin-left: var(--space-sm); padding: var(--space-xs) var(--space-sm); background: #fee; color: #c33; border: none; border-radius: var(--radius-sm); cursor: pointer;">✕</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: var(--space-md);">
+        <button type="submit" class="btn btn-primary">Uložiť zmeny</button>
+        <a href="{{ url_for('user_profile', username=current_user.username) }}" class="btn btn-ghost">Zrušiť</a>
+      </div>
+    </form>
+  </section>
+
+  <script>
+    function previewProfileImage(input) {
+      const preview = document.getElementById('profilePreview');
+      const previewImg = document.getElementById('profilePreviewImg');
+      
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewImg.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+    
+    function removeProfileImage() {
+      document.getElementById('profile_image_file').value = '';
+      document.getElementById('profilePreview').style.display = 'none';
+    }
+  </script>
+{% endblock %}

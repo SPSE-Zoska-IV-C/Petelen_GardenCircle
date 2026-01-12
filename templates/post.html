@@ -1,43 +1,184 @@
 {% extends 'base.html' %}
-{% block title %}GardenCircle — príspevok{% endblock %}
-{% block body_class %}bg-leaf{% endblock %}
-{% block content %}
-    <section class="card full">
-      <header class="section-header">
-        <h2>Príspevok</h2>
-      </header>
-      <article class="post-card">
-        <div class="post-header">
-          <div class="meta">
-            <strong class="author">{{ post.author }}</strong>
-            <time class="time">{{ post.created_at }}</time>
-          </div>
-        </div>
-        <p class="post-content">{{ post.content }}</p>
-      </article>
-    </section>
 
-    <section class="card full">
-      <header class="section-header">
-        <h3>Komentáre</h3>
+{% block body_class %}bg-leaf{% endblock %}
+
+{% block title %}GardenCircle — Príspevok{% endblock %}
+
+{% block content %}
+  <section class="card post-detail-card">
+    <div class="post-card">
+      <div class="post-header">
+        <div class="meta">
+          <a href="{{ url_for('user_profile', username=post.author) }}" style="text-decoration: none; color: var(--primary-green);">
+            <strong class="author">{{ post.author }}</strong>
+          </a>
+          <time class="time">{{ post.created_at }}</time>
+        </div>
+      </div>
+      <div class="post-content">
+        {{ post.content }}
+      </div>
+      {% if post.image_path %}
+        <img src="{{ url_for('static', filename=post.image_path) }}" alt="Obrázok príspevku" loading="lazy">
+      {% endif %}
+      <div class="post-actions" style="display:flex; align-items:center; gap:.5rem; margin-top:.5rem;">
+        <button id="likeBtn" class="btn btn-ghost like-btn {{ 'liked' if post.liked else '' }}" data-post-id="{{ post.id }}" aria-label="Páči sa mi to">
+          <span class="like-emoji">{{ '❤️' if post.liked else '🤍' }}</span>
+        </button>
+        <span id="likeCount" class="like-count">{{ post.like_count or 0 }}</span>
+      </div>
+    </div>
+
+    <div class="comment-section-inline">
+      <header class="section-header" style="display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-md); justify-content:space-between;">
+        <div>
+          <h2>Komentáre</h2>
+          <p class="muted">Čo si o tom myslíš?</p>
+        </div>
+        <div class="auto-answer-controls">
+          <button type="button" class="btn btn-ghost small" id="autoAnswerToggle" aria-haspopup="true" aria-expanded="false">🤖 Získať AI odpoveď</button>
+          <div id="autoAnswerMenu" class="auto-answer-menu" hidden>
+            <button type="button" class="btn btn-ghost small auto-answer-option" data-length="short" data-post-id="{{ post.id }}">⚡ Krátka odpoveď</button>
+            <button type="button" class="btn btn-ghost small auto-answer-option" data-length="long" data-post-id="{{ post.id }}">📚 Dlhšia odpoveď</button>
+          </div>
+          <span class="muted small-text" id="autoAnswerStatus" hidden>Vyber dĺžku odpovede.</span>
+        </div>
       </header>
+      
       <ul class="comment-list">
         {% for c in comments %}
           <li>
-            <strong>{{ c.author }}</strong> • <small class="muted">{{ c.created_at }}</small>
-            <div>{{ c.text }}</div>
+            <strong>{{ c.author }}</strong>
+            <span class="muted"> • {{ c.created_at }}</span>
+            <div style="margin-top: var(--space-xs);">{{ c.text }}</div>
           </li>
         {% else %}
-          <li class="muted">Zatiaľ žiadne komentáre.</li>
+          <li class="muted text-center" style="padding: var(--space-lg);">
+            Zatiaľ žiadne komentáre — buď prvý, kto komentuje!
+          </li>
         {% endfor %}
       </ul>
 
       <form class="comment-form" method="post" action="{{ url_for('add_comment', post_id=post.id) }}">
-        <input type="text" name="author" placeholder="Tvoje meno (nepovinné)">
-        <input type="text" name="text" placeholder="Napíš komentár" required>
-        <button class="btn small">Odoslať</button>
+        <div class="form-group" style="width:100%;">
+          <textarea class="comment-input comment-textarea" name="text" placeholder="Napíš komentár..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Odoslať komentár</button>
       </form>
-    </section>
+    </div>
+  </section>
+
+  <script>
+    const autoAnswerToggle = document.getElementById('autoAnswerToggle');
+    const autoAnswerMenu = document.getElementById('autoAnswerMenu');
+    const autoAnswerStatus = document.getElementById('autoAnswerStatus');
+    const commentList = document.querySelector('.comment-list');
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.innerText = text;
+      return div.innerHTML;
+    }
+
+    function appendComment(author, text) {
+      if (!commentList) return;
+      const emptyState = commentList.querySelector('.muted.text-center');
+      if (emptyState) {
+        emptyState.remove();
+      }
+
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <strong>${escapeHtml(author)}</strong>
+        <span class="muted"> • práve teraz</span>
+        <div style="margin-top: var(--space-xs);">${escapeHtml(text)}</div>
+      `;
+      commentList.appendChild(li);
+    }
+
+    function setStatus(message, show = true) {
+      if (!autoAnswerStatus) return;
+      autoAnswerStatus.textContent = message;
+      autoAnswerStatus.hidden = !show;
+    }
+
+    function openAnswerMenu() {
+      if (!autoAnswerMenu || !autoAnswerToggle) return;
+      autoAnswerMenu.hidden = false;
+      autoAnswerMenu.dataset.open = 'true';
+      autoAnswerToggle.setAttribute('aria-expanded', 'true');
+      setStatus('Vyber dĺžku odpovede.', true);
+    }
+
+    function closeAnswerMenu() {
+      if (!autoAnswerMenu || !autoAnswerToggle) return;
+      autoAnswerMenu.hidden = true;
+      autoAnswerMenu.dataset.open = 'false';
+      autoAnswerToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    async function requestAutoAnswer(postId, length, triggerBtn) {
+      if (triggerBtn) {
+        triggerBtn.disabled = true;
+      }
+      if (autoAnswerToggle) {
+        autoAnswerToggle.disabled = true;
+      }
+      setStatus('AI spracováva odpoveď…');
+
+      try {
+        const response = await fetch(`/api/posts/${postId}/answer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ length })
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Nepodarilo sa načítať odpoveď.');
+        }
+
+        appendComment(data.author || 'GardenCircle Guide', data.text || '');
+        setStatus('Odpoveď AI bola pridaná.');
+        closeAnswerMenu();
+      } catch (error) {
+        console.error(error);
+        setStatus(error.message || 'AI odpoveď sa nepodarila.');
+      } finally {
+        if (triggerBtn) {
+          triggerBtn.disabled = false;
+        }
+        if (autoAnswerToggle) {
+          autoAnswerToggle.disabled = false;
+        }
+      }
+    }
+
+    if (autoAnswerToggle && autoAnswerMenu) {
+      autoAnswerToggle.addEventListener('click', () => {
+        if (autoAnswerMenu.hidden) {
+          openAnswerMenu();
+        } else {
+          closeAnswerMenu();
+        }
+      });
+
+      document.addEventListener('click', (event) => {
+        if (autoAnswerMenu.hidden) return;
+        const target = event.target;
+        if (!autoAnswerMenu.contains(target) && target !== autoAnswerToggle) {
+          closeAnswerMenu();
+          setStatus('', false);
+        }
+      });
+
+      autoAnswerMenu.querySelectorAll('.auto-answer-option').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const length = btn.dataset.length || 'short';
+          const postId = btn.dataset.postId;
+          requestAutoAnswer(postId, length, btn);
+        });
+      });
+    }
+  </script>
 {% endblock %}
-
-

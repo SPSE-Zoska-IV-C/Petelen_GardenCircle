@@ -1,53 +1,197 @@
 {% extends 'base.html' %}
 {% block title %}Admin Panel{% endblock %}
 {% block content %}
-<section class="card full">
+<section class="card admin-panel-card">
   <header class="section-header">
     <h2>Admin</h2>
-    <p class="muted">Pridaj článok, novinku alebo obrázok k príspevku</p>
+    <p class="muted">Vyber, s čím chceš pracovať</p>
   </header>
 
-  <h3>Upload obrázka</h3>
-  <form id="uploadForm" enctype="multipart/form-data">
-    <input type="file" name="image" accept="image/*">
-    <button class="btn">Nahrať</button>
-  </form>
-  <p id="uploadResult" class="muted"></p>
+  <div class="admin-mode-picker">
+    <button class="admin-mode-btn active" data-target="articles-section">📚 Pridať článok</button>
+    <button class="admin-mode-btn" data-target="posts-section">🗑️ Správa príspevkov</button>
+    <button class="admin-mode-btn" data-target="users-section">👥 Profily používateľov</button>
+  </div>
 
-  <h3>Nový článok</h3>
-  <form method="post" action="/admin/articles">
-    <input name="title" placeholder="Názov" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0;margin-bottom:.5rem">
-    <textarea name="content" rows="4" placeholder="Obsah" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0"></textarea>
-    <input name="image_path" id="articleImage" placeholder="Cesta k obrázku (z uploadu)">
-    <div style="margin-top:.5rem"><button class="btn primary">Pridať článok</button></div>
-  </form>
+  <div class="admin-panel-section" id="articles-section">
+    <h3>Nový článok</h3>
+    <p class="muted">Naplň titulok, obsah a pridaj ilustračný obrázok.</p>
+    <form method="post" action="/admin/articles" class="admin-form" enctype="multipart/form-data">
+      <label class="admin-field">
+        <span>Názov</span>
+        <input name="title" placeholder="Ako sa starať o monstera deliciosa" required>
+      </label>
+      <label class="admin-field">
+        <span>Obsah</span>
+        <textarea name="content" rows="6" placeholder="Celý článok..." required></textarea>
+      </label>
+      <div class="admin-image-group">
+        <span>Obrázok článku</span>
+        <div class="admin-image-inputs">
+          <label class="admin-upload">
+            <span>Upload súboru</span>
+            <input type="file" name="image_file" id="articleImageFile" accept="image/*">
+          </label>
+          <label class="admin-field">
+            <span>alebo externá URL</span>
+            <input type="url" name="external_image_url" id="articleImageUrl" placeholder="https://example.com/obrazok.jpg">
+          </label>
+        </div>
+        <div class="admin-image-preview" id="articleImagePreviewWrapper" hidden>
+          <img id="articleImagePreview" alt="Náhľad článku">
+        </div>
+      </div>
+      <button class="btn primary full-width">Pridať článok</button>
+    </form>
+  </div>
 
-  <h3>Nová novinka</h3>
-  <form method="post" action="/admin/news">
-    <input name="title" placeholder="Názov" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0;margin-bottom:.5rem">
-    <textarea name="content" rows="3" placeholder="Krátky text" style="width:100%;padding:.6rem;border-radius:10px;border:1px solid #e6eef0"></textarea>
-    <input name="image_path" id="newsImage" placeholder="Cesta k obrázku (z uploadu)">
-    <div style="margin-top:.5rem"><button class="btn primary">Pridať novinku</button></div>
-  </form>
+  <div class="admin-panel-section hidden" id="posts-section">
+    <h3>Správa príspevkov</h3>
+    <p class="muted">Vymaž nevhodné príspevky alebo pridaj ilustračný obrázok.</p>
 
-  <h3>Pridať obrázok k príspevku</h3>
-  <form method="post" action="/admin/post-image">
-    <input name="post_id" placeholder="ID príspevku">
-    <input name="image_path" id="postImage" placeholder="Cesta k obrázku (z uploadu)">
-    <button class="btn">Pridať obrázok</button>
-  </form>
+    <form method="post" action="/admin/delete-post" class="admin-form">
+      <label class="admin-field">
+        <span>ID príspevku</span>
+        <input name="post_id" placeholder="123" required>
+      </label>
+      <button class="btn danger">Vymazať príspevok</button>
+    </form>
 
+    <div class="admin-post-list">
+      {% for post in recent_posts %}
+        <form method="post" action="/admin/delete-post" class="admin-post-row">
+          <input type="hidden" name="post_id" value="{{ post.id }}">
+          <div class="admin-post-info">
+            <div class="admin-post-meta">
+              <strong>#{{ post.id }}</strong>
+              <span>Autor: {{ post.author }}</span>
+              <span>{{ post.created_at }}</span>
+            </div>
+            <p>{{ post.content[:140] }}{% if post.content|length > 140 %}&hellip;{% endif %}</p>
+          </div>
+          <button class="btn danger small" type="submit">Vymazať</button>
+        </form>
+      {% else %}
+        <p class="muted small-text">Žiadne príspevky na zobrazenie.</p>
+      {% endfor %}
+    </div>
+
+    <div class="admin-divider"></div>
+
+    <h3>Pridať obrázok k príspevku</h3>
+    <form method="post" action="/admin/post-image" class="admin-form">
+      <label class="admin-field">
+        <span>ID príspevku</span>
+        <input name="post_id" placeholder="123" required>
+      </label>
+      <label class="admin-field">
+        <span>Cesta k obrázku</span>
+        <input name="image_path" id="postImage" placeholder="uploads/nazov-suboru.jpg" required>
+      </label>
+      <button class="btn">Pridať obrázok</button>
+    </form>
+
+    <p class="muted small-text">Novinky sú načítavané automaticky z NewsAPI.org.</p>
+  </div>
+
+  <div class="admin-panel-section hidden" id="users-section">
+    <h3>Profily používateľov</h3>
+    <p class="muted">Prezri si účty komunity a podľa potreby ich vymaž.</p>
+
+    <div class="admin-post-list">
+      {% for user in users %}
+        <div class="admin-post-row">
+          <div class="admin-post-info">
+            <div class="admin-post-meta">
+              <strong>@{{ user.username }}</strong>
+              <span>{{ user.email }}</span>
+              <span>{{ user.created_at }}</span>
+            </div>
+            <p class="small-text muted">{{ user.bio or 'Žiadny bio text.' }}</p>
+          </div>
+          {% if user.is_admin %}
+            <span class="muted small-text">Admin</span>
+          {% else %}
+            <form method="post" action="/admin/delete-user">
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <button class="btn danger small" type="submit">Vymazať</button>
+            </form>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="muted small-text">Žiadni používatelia na zobrazenie.</p>
+      {% endfor %}
+    </div>
+    <p class="muted small-text">Admin účty nie je možné odstrániť priamo z panelu.</p>
+  </div>
 </section>
 
 <script>
-document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.currentTarget;
-  const fd = new FormData(form);
-  const res = await fetch('/admin/upload', { method: 'POST', body: fd });
-  const data = await res.json();
-  document.getElementById('uploadResult').textContent = data.path || 'Chyba uploadu';
+const adminButtons = document.querySelectorAll('.admin-mode-btn');
+const adminSections = document.querySelectorAll('.admin-panel-section');
+
+adminButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    adminButtons.forEach(b => b.classList.toggle('active', b === btn));
+    adminSections.forEach(section => {
+      section.classList.toggle('hidden', section.id !== btn.dataset.target);
+    });
+  });
 });
+
+const articleImageFile = document.getElementById('articleImageFile');
+const articleImageUrl = document.getElementById('articleImageUrl');
+const previewWrapper = document.getElementById('articleImagePreviewWrapper');
+const previewImage = document.getElementById('articleImagePreview');
+let objectUrl = null;
+
+function setPreview(src) {
+  if (!src) {
+    previewWrapper.hidden = true;
+    previewImage.removeAttribute('src');
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+      objectUrl = null;
+    }
+    return;
+  }
+  previewWrapper.hidden = false;
+  previewImage.src = src;
+}
+
+if (articleImageFile) {
+  articleImageFile.addEventListener('change', (event) => {
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+      objectUrl = null;
+    }
+    const files = event.target.files || [];
+    const file = files[0];
+    if (file) {
+      objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
+      if (articleImageUrl) {
+        articleImageUrl.value = '';
+      }
+    } else {
+      setPreview(null);
+    }
+  });
+}
+
+if (articleImageUrl) {
+  articleImageUrl.addEventListener('input', (event) => {
+    const value = event.target.value.trim();
+    if (value) {
+      setPreview(value);
+      if (articleImageFile) {
+        articleImageFile.value = '';
+      }
+    } else if (!(articleImageFile && articleImageFile.files && articleImageFile.files.length)) {
+      setPreview(null);
+    }
+  });
+}
 </script>
 {% endblock %}
 

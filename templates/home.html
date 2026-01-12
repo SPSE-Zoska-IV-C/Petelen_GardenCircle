@@ -1,26 +1,82 @@
 {% extends 'base.html' %}
+
 {% block body_class %}bg-leaf{% endblock %}
+
 {% block title %}GardenCircle — Domov{% endblock %}
+
 {% block content %}
-  <section class="hero card hero-home">
+  <!-- Hero Section -->
+  <section class="hero card hero-card">
     <div class="hero-inner">
       <div>
         <h2>Vitaj v GardenCircle</h2>
-        <p class="muted">Čistá, moderná komunita pre milovníkov rastlín. Zdieľaj svoje príbehy a objavuj tipy.</p>
+        <p class="muted">Čistá, moderná komunita pre milovníkov rastlín. Zdieľaj svoje príbehy, objavuj tipy a pripoj sa k komunite, ktorá miluje prírodu.</p>
+        <a href="{{ url_for('posts_page') }}" class="btn btn-primary">Začať zdieľať</a>
       </div>
     </div>
   </section>
-  <section class="card full">
+
+  <!-- Features Section -->
+  <section class="card">
     <header class="section-header">
-      <h2>Vybrané</h2>
-      <p class="muted">Krátky prehľad toho, čo nájdeš v aplikácii.</p>
+      <h2>Prečo GardenCircle?</h2>
+      <p class="muted">Všetko, čo potrebuješ na jednom mieste</p>
     </header>
-    <ul class="post-list">
-      <li class="post-card"><strong>Príspevky</strong><p>Pýtaj sa a zdieľaj skúsenosti s komunitou.</p></li>
-      <li class="post-card"><strong>Články</strong><p>Overené tipy a návody pre tvoje rastliny.</p></li>
-      <li class="post-card"><strong>Novinky</strong><p>Inšpirácia z prírody a udržateľnosti.</p></li>
-    </ul>
+    
+    <div class="feature-grid">
+      <div class="feature-item">
+        <div class="icon">💬</div>
+        <h3>Komunita</h3>
+        <p>Pýtaj sa a zdieľaj skúsenosti s komunitou milovníkov rastlín</p>
+      </div>
+      
+      <div class="feature-item">
+        <div class="icon">📚</div>
+        <h3>Články</h3>
+        <p>Overené tipy a návody pre starostlivosť o tvoje rastliny</p>
+      </div>
+      
+      <div class="feature-item">
+        <div class="icon">🌱</div>
+        <h3>Novinky</h3>
+        <p>Inšpirácia z prírody a udržateľnosti zo sveta rastlín</p>
+      </div>
+      
+      <div class="feature-item">
+        <div class="icon">🤖</div>
+        <h3>AI Asistent</h3>
+        <p>Odpovede na tvoje otázky ohľadom pestovania rastlín</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Links -->
+  <section class="card">
+    <header class="section-header">
+      <h2>Rýchle odkazy</h2>
+      <p class="muted">Preskoč na to, čo ťa zaujíma</p>
+    </header>
+    
+    <div class="feature-grid">
+      <a href="{{ url_for('posts_page') }}" class="feature-item" style="text-decoration: none; color: inherit;">
+        <h3>Príspevky komunity</h3>
+        <p>Pozri si, čo nové sa deje v našej komunite</p>
+      </a>
+      
+      <a href="{{ url_for('articles') }}" class="feature-item" style="text-decoration: none; color: inherit;">
+        <h3>Články a návody</h3>
+        <p>Overené tipy od expertov na rastliny</p>
+      </a>
+      
+      <a href="{{ url_for('chatbot_placeholder') }}" class="feature-item" style="text-decoration: none; color: inherit;">
+        <h3>AI Chatbot</h3>
+        <p>Spýtaj sa AI asistenta na čokoľvek o rastlinách</p>
+      </a>
+      
+      <a href="{{ url_for('about') }}" class="feature-item" style="text-decoration: none; color: inherit;">
+        <h3>O projekte</h3>
+        <p>Zisti viac o GardenCircle a našej misii</p>
+      </a>
+    </div>
   </section>
 {% endblock %}
-
-

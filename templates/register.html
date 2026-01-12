@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block body_class %}bg-leaf{% endblock %}
+
+{% block title %}GardenCircle — Registrácia{% endblock %}
+
+{% block content %}
+  <div style="max-width: 500px; margin: 0 auto;">
+    <section class="hero card hero-card text-center" style="margin-bottom: var(--space-lg);">
+      <div class="hero-inner">
+        <div>
+          <h2>Vytvoriť účet</h2>
+          <p class="muted">Pripoj sa k GardenCircle komunite</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <form method="post" action="{{ url_for('register') }}">
+        {% if error %}
+          <div class="error-message" style="background: linear-gradient(135deg, #fee 0%, #fdd 100%); color: #c33; padding: var(--space-lg); border-radius: var(--radius-xl); margin-bottom: var(--space-xl); border: 2px solid #fcc; box-shadow: 0 4px 12px rgba(204, 51, 51, 0.1);">
+            <strong>⚠️</strong> {{ error }}
+          </div>
+        {% endif %}
+
+        <div class="form-group">
+          <label for="username">Používateľské meno</label>
+          <input type="text" id="username" name="username" placeholder="Zvoľ si meno" required autofocus>
+          <small class="muted">Musí byť jedinečné</small>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="tvoj@email.sk" required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Heslo</label>
+          <input type="password" id="password" name="password" placeholder="Minimálne 6 znakov" required>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm_password">Potvrď heslo</label>
+          <input type="password" id="confirm_password" name="confirm_password" placeholder="Znovu zadaj heslo" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Vytvoriť účet</button>
+      </form>
+
+      <div class="text-center" style="margin-top: var(--space-xl); padding-top: var(--space-xl); border-top: 2px solid var(--gray-200);">
+        <p class="muted">Už máš účet?</p>
+        <a href="{{ url_for('login') }}" class="btn btn-secondary">Prihlásiť sa</a>
+      </div>
+    </section>
+  </div>
+{% endblock %}
