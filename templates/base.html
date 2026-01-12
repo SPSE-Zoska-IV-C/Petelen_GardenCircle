@@ -42,15 +42,11 @@
           <a href="{{ url_for('login') }}">🔑 Prihlásiť</a>
           <a href="{{ url_for('register') }}">✨ Registrácia</a>
         {% endif %}
-        <button id="menuToggle" type="button" class="menu-toggle" aria-label="Menu" aria-expanded="false">
-          <span class="menu-icon">☰</span>
-        </button>
-        <div class="dropdown-menu" id="dropdownMenu">
-          {% if current_user.is_authenticated %}
-            <a href="{{ url_for('logout') }}">🚪 Odhlásiť</a>
-          {% endif %}
-          <button id="themeToggle" type="button" aria-label="Prepínač témy">🌓 Téma</button>
-        </div>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('settings') }}" class="menu-toggle" aria-label="Nastavenia">
+          <span class="menu-icon">⚙️</span>
+        </a>
+        {% endif %}
       </nav>
     </div>
   </header>

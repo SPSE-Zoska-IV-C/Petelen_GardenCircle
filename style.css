@@ -33,7 +33,7 @@
   /* Header */
   .site-header{
     background:linear-gradient(90deg,#2f9e44 0%, #53b175 100%);
-    color:white;
+    color:var(--on-primary);
     padding:1rem 0;
     box-shadow:0 6px 18px rgba(16,24,40,0.08);
   }
@@ -49,7 +49,7 @@
   
   /* Nav */
   .main-nav a{
-    color:white;text-decoration:none;margin-left:1rem;font-weight:600;
+    color:var(--on-primary);text-decoration:none;margin-left:1rem;font-weight:600;
   }
   .main-nav a:focus{outline:3px solid rgba(255,255,255,0.12);border-radius:6px;padding:.25rem}
   
@@ -85,7 +85,7 @@
     font-weight:600;
     background:transparent;
   }
-  .btn.primary{background:var(--accent);color:white;box-shadow:0 6px 18px rgba(47,158,68,0.12)}
+  .btn.primary{background:var(--accent);color:var(--on-primary);box-shadow:0 6px 18px rgba(47,158,68,0.12)}
   .btn.small{padding:.25rem .5rem;font-size:.85rem;border-radius:8px}
   
   /* Post list */
@@ -100,7 +100,7 @@
   /* Comments */
   .comments{margin-top:0.5rem;border-top:1px dashed #eef5ef;padding-top:0.5rem}
   .comment-list{list-style:none;padding:0;margin:0 0 .5rem 0}
-  .comment-list li{padding:.4rem .6rem;border-radius:8px;margin-bottom:.35rem;background:#fbfff9;border:1px solid #f3f8f3}
+  .comment-list li{padding:.4rem .6rem;border-radius:8px;margin-bottom:.35rem;background:var(--card);border:1px solid #f3f8f3}
   
   /* Comment form */
   .comment-form{display:flex;gap:.5rem}
@@ -108,7 +108,7 @@
   
   /* Chat */
   .chat-window{
-    min-height:200px;max-height:360px;overflow:auto;border:1px solid #e9f0ea;padding:0.75rem;border-radius:10px;background:#fbfff9;margin-bottom:.5rem;
+    min-height:200px;max-height:360px;overflow:auto;border:1px solid #e9f0ea;padding:0.75rem;border-radius:10px;background:var(--card);margin-bottom:.5rem;
   }
   .chat-bubble{display:inline-block;padding:.5rem .65rem;border-radius:12px;max-width:78%;margin-bottom:.5rem}
   .chat-user{background:#e6f7ee;align-self:flex-end}

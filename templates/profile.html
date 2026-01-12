@@ -13,7 +13,7 @@
             <img src="{{ url_for('static', filename=user.profile_image) }}" alt="{{ user.username }}" style="width: 140px; height: 140px; border-radius: var(--radius-full); object-fit: cover; border: 5px solid var(--primary-green); box-shadow: var(--shadow-green);" loading="lazy">
           {% endif %}
         {% else %}
-          <div style="width: 140px; height: 140px; border-radius: var(--radius-full); background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; font-size: 3.5rem; font-weight: 800; color: white; border: 5px solid var(--primary-green); box-shadow: var(--shadow-green);">
+          <div style="width: 140px; height: 140px; border-radius: var(--radius-full); background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; font-size: 3.5rem; font-weight: 800; color: var(--on-primary); border: 5px solid var(--primary-green); box-shadow: var(--shadow-green);">
             {{ user.username[0].upper() }}
           </div>
         {% endif %}

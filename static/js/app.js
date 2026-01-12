@@ -7,8 +7,8 @@
   
   // Initialize all components when DOM is ready
   function initAll() {
-    initMenuToggle();
     initThemeToggle();
+    sanitizePostInlineStyles();
   }
   
   if (document.readyState === 'loading') {
@@ -42,138 +42,119 @@
     };
   }
   
-  // Initialize menu toggle when DOM is ready
-  function initMenuToggle() {
-    const menuToggle = document.getElementById('menuToggle');
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    
-    if (!menuToggle || !dropdownMenu) {
-      console.warn('Menu toggle elements not found', { menuToggle, dropdownMenu });
-      return;
-    }
-    
-    console.log('Menu toggle initialized', { menuToggle, dropdownMenu });
-    
-    const toggleMenu = (e) => {
-      console.log('Toggle menu called', e);
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      
-      const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
-      const newState = !isExpanded;
-      
-      console.log('Menu state:', { isExpanded, newState });
-      
-      menuToggle.setAttribute('aria-expanded', newState.toString());
-      
-      if (newState) {
-        dropdownMenu.classList.add('show');
-        console.log('Menu opened, classes:', dropdownMenu.className);
-      } else {
-        dropdownMenu.classList.remove('show');
-        console.log('Menu closed, classes:', dropdownMenu.className);
-      }
-      
-      // Add visual feedback
-      menuToggle.style.transform = 'scale(0.95)';
-      setTimeout(() => {
-        menuToggle.style.transform = '';
-      }, 150);
-    };
-
-    // Click event
-    menuToggle.addEventListener('click', (e) => {
-      console.log('Menu toggle clicked');
-      toggleMenu(e);
-    });
-    
-    // Touch events for mobile
-    menuToggle.addEventListener('touchend', (e) => {
-      console.log('Menu toggle touched');
-      e.preventDefault();
-      toggleMenu(e);
-    }, { passive: false });
-    
-    // Visual feedback on touch
-    menuToggle.addEventListener('touchstart', () => {
-      menuToggle.style.opacity = '0.7';
-    }, { passive: true });
-    
-    menuToggle.addEventListener('touchend', () => {
-      setTimeout(() => {
-        menuToggle.style.opacity = '';
-      }, 150);
-    }, { passive: true });
-
-    // Close menu when clicking outside
-    document.addEventListener('click', (e) => {
-      if (menuToggle && dropdownMenu) {
-        const target = e.target;
-        if (!menuToggle.contains(target) && !dropdownMenu.contains(target)) {
-          menuToggle.setAttribute('aria-expanded', 'false');
-          dropdownMenu.classList.remove('show');
-        }
-      }
-    });
-
-    // Close menu when clicking menu items (but let them execute first)
-    const menuItems = dropdownMenu.querySelectorAll('a, button');
-    menuItems.forEach(el => {
-      el.addEventListener('click', (e) => {
-        // Don't prevent default - let the link/button work
-        setTimeout(() => {
-          if (menuToggle && dropdownMenu) {
-            menuToggle.setAttribute('aria-expanded', 'false');
-            dropdownMenu.classList.remove('show');
-          }
-        }, 100);
-      });
-    });
-    
-    // Close menu on escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && menuToggle && dropdownMenu) {
-        const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
-        if (isExpanded) {
-          menuToggle.setAttribute('aria-expanded', 'false');
-          dropdownMenu.classList.remove('show');
-        }
-      }
-    });
-    
-    // Ensure button is clickable
-    menuToggle.style.pointerEvents = 'auto';
-    menuToggle.style.cursor = 'pointer';
-    menuToggle.setAttribute('tabindex', '0');
-    
-    // Ensure dropdown is properly positioned
-    dropdownMenu.style.zIndex = '1004';
-    dropdownMenu.style.pointerEvents = 'auto';
-  }
+  // Menu toggle removed; settings page used instead
+  // Previously handled a small dropdown in the header; this is now implemented as a dedicated settings page.
   
-  // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initMenuToggle);
-  } else {
-    // DOM is already ready
-    initMenuToggle();
+  // initialization handled by initAll() above
+
+  // Theme toggle - improved: supports multiple toggles, updates UI, and persists
+  function initThemeToggle() {
+    const toggles = document.querySelectorAll('[data-theme-toggle]');
+    const preview = document.getElementById('themePreview');
+
+    function applyTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      localStorage.setItem('theme', theme);
+      // Update theme-color meta for mobile browsers
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) {
+        meta.setAttribute('content', theme === 'dark' ? '#07120f' : '#16a085');
+      }
+      // Update all controls
+      toggles.forEach(t => {
+        const label = t.querySelector('.switch-label');
+        const knob = t.querySelector('.switch-knob');
+        const isDark = theme === 'dark';
+        t.setAttribute('aria-checked', isDark ? 'true' : 'false');
+        t.classList.toggle('on', isDark);
+        if (label) label.textContent = isDark ? 'Tma' : 'Svetlá';
+        if (knob) knob.textContent = isDark ? '🌑' : '🌗';
+      });
+      // Update preview styling if present
+      if (preview) preview.classList.toggle('dark', theme === 'dark');
+    }
+
+    // Apply saved or preferred theme
+    const saved = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    applyTheme(saved);
+
+    toggles.forEach(t => {
+      t.addEventListener('click', (e) => {
+        e.preventDefault();
+        const current = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+      });
+    });
   }
 
-  // Theme toggle
-  function initThemeToggle() {
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-      const saved = localStorage.getItem('theme') || 'light';
-      document.documentElement.dataset.theme = saved;
-      themeToggle.addEventListener('click', () => {
-        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-        document.documentElement.dataset.theme = next;
-        localStorage.setItem('theme', next);
+  // Sanitize inline color/background styles inside posts/comments to prevent invisible text
+  function sanitizePostInlineStyles(root=document) {
+    try {
+      const selectors = ['.post-content', '.post-content-text', '.comment-list li > div'];
+      selectors.forEach(sel => {
+        const nodes = (root.querySelectorAll) ? root.querySelectorAll(sel) : [];
+        nodes.forEach(elRoot => {
+          if (!elRoot) return;
+          // remove color/background-color from root element
+          if (elRoot.style) {
+            elRoot.style.removeProperty('color');
+            elRoot.style.removeProperty('background-color');
+            if (elRoot.getAttribute && elRoot.getAttribute('style') && elRoot.getAttribute('style').trim() === '') elRoot.removeAttribute('style');
+          }
+          // remove from all descendants
+          elRoot.querySelectorAll('*').forEach(el => {
+            if (!el.style) return;
+            el.style.removeProperty('color');
+            el.style.removeProperty('background-color');
+            if (el.getAttribute && el.getAttribute('style') && el.getAttribute('style').trim() === '') el.removeAttribute('style');
+          });
+        });
       });
+    } catch (e) {
+      // Fail silently - don't break the site
+      console.warn('sanitizePostInlineStyles error', e);
     }
   }
+
+  // Observe DOM mutations to sanitize dynamically inserted/updated content
+  function observeAndSanitize() {
+    try {
+      const observer = new MutationObserver((mutations) => {
+        let seen = false;
+        for (const m of mutations) {
+          // sanitize added nodes
+          if (m.addedNodes && m.addedNodes.length) {
+            m.addedNodes.forEach(node => {
+              if (node.nodeType !== Node.ELEMENT_NODE) return;
+              sanitizePostInlineStyles(node);
+              seen = true;
+            });
+          }
+          // sanitize if style attribute changed
+          if (m.type === 'attributes' && (m.attributeName === 'style' || m.attributeName === 'class')) {
+            const target = m.target;
+            if (target && (target.matches && (target.matches('.post-content') || target.matches('.post-content-text') || target.closest('.comment-list')))) {
+              sanitizePostInlineStyles(target);
+              seen = true;
+            }
+          }
+        }
+        // minor optimization: if we saw updates, also sanitize the whole document area for safety
+        if (seen) sanitizePostInlineStyles(document);
+      });
+
+      observer.observe(document.documentElement || document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+
+      // Fallback: periodic sanitize in case some scripts bypass mutation hooks
+      setInterval(() => sanitizePostInlineStyles(document), 3000);
+    } catch (e) {
+      console.warn('observeAndSanitize error', e);
+    }
+  }
+
+  // Start observing after DOM ready
+  document.addEventListener('DOMContentLoaded', () => observeAndSanitize());
 
   // Back to top - throttled scroll
   const backToTop = $("#backToTop");
@@ -696,26 +677,26 @@
   });
 
   // Add swipe gestures for cards (optional enhancement)
-  let touchStartX = 0;
-  let touchStartY = 0;
+  let swipeStartX = 0;
+  let swipeStartY = 0;
   
   document.addEventListener('touchstart', (e) => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
   }, { passive: true });
 
   document.addEventListener('touchend', (e) => {
-    if (!touchStartX || !touchStartY) return;
+    if (!swipeStartX || !swipeStartY) return;
     
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
     
-    const diffX = touchStartX - touchEndX;
-    const diffY = touchStartY - touchEndY;
+    const diffX = swipeStartX - touchEndX;
+    const diffY = swipeStartY - touchEndY;
     
     // Reset
-    touchStartX = 0;
-    touchStartY = 0;
+    swipeStartX = 0;
+    swipeStartY = 0;
     
     // Detect swipe (only if significant and mostly horizontal)
     if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {

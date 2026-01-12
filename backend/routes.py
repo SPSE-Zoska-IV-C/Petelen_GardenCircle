@@ -199,6 +199,12 @@ def register_routes(app):
             return render_template("home.html")
         return redirect(url_for('login'))
 
+    # Settings page
+    @app.route('/settings')
+    @login_required
+    def settings():
+        return render_template('settings.html')
+
     @app.route("/posts", methods=["GET"])
     @login_required
     def posts_page():

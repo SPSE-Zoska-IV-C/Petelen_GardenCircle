@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Nastavenia — GardenCircle{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="card settings-card">
+      <header class="card-header">
+        <h2>Nastavenia</h2>
+        <p class="muted">Spravujte svoje konto a preferencie</p>
+      </header>
+      <div class="card-body">
+        <section class="setting-row">
+          <div class="setting-left">
+            <h3>Téma</h3>
+            <p class="muted">Prepnúť medzi svetlou a tmavou témou</p>
+          </div>
+          <div class="setting-right">
+            <div class="theme-preview" id="themePreview" aria-hidden="true">
+              <div class="preview-card">Ukážka</div>
+            </div>
+            <button id="themeToggle" data-theme-toggle type="button" class="btn theme-switch" role="switch" aria-checked="false" aria-label="Prepínač témy">
+              <span class="switch-knob" aria-hidden="true">🌗</span>
+              <span class="switch-label">Svetlá</span>
+            </button>
+          </div>
+        </section>
+
+        <hr />
+
+        <section class="setting-row">
+          <div class="setting-left">
+            <h3>Účet</h3>
+            <p class="muted">Odhlásiť sa z aplikácie</p>
+          </div>
+          <div class="setting-right">
+            <a href="{{ url_for('logout') }}" class="btn danger">🚪 Odhlásiť sa</a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+{% endblock %}

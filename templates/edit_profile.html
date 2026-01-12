@@ -29,7 +29,7 @@
         <input type="file" id="profile_image_file" name="profile_image_file" accept="image/*" style="display: none;" onchange="previewProfileImage(this)">
         <div id="profilePreview" style="margin-top: var(--space-md); display: {% if current_user.profile_image %}block{% else %}none{% endif %};">
           <img id="profilePreviewImg" src="{% if current_user.profile_image %}{{ url_for('static', filename=current_user.profile_image) }}{% endif %}" alt="Preview" style="width: 120px; height: 120px; border-radius: var(--radius-full); object-fit: cover; border: 3px solid var(--primary-green);">
-          <button type="button" onclick="removeProfileImage()" style="margin-left: var(--space-sm); padding: var(--space-xs) var(--space-sm); background: #fee; color: #c33; border: none; border-radius: var(--radius-sm); cursor: pointer;">✕</button>
+          <button type="button" onclick="removeProfileImage()" class="btn danger small" style="margin-left: var(--space-sm);">✕</button>
         </div>
       </div>
 

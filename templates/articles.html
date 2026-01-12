@@ -27,7 +27,7 @@
             {% if resolved_src %}
               <img src="{{ resolved_src }}" alt="{{ a.title }}" loading="lazy">
             {% else %}
-              <img src="{{ url_for('static', filename='img/leaf.svg') }}" alt="{{ a.title }}" loading="lazy" style="background: var(--light-green);">
+              <img src="{{ url_for('static', filename='img/leaf.svg') }}" alt="{{ a.title }}" loading="lazy" style="background: var(--surface); border-radius: .5rem; padding: .35rem;">
             {% endif %}
             <div class="content">
               <h3>{{ a.title }}</h3>
