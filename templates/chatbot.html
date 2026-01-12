@@ -1,15 +1,647 @@
 {% extends 'base.html' %}
-{% block title %}GardenCircle — chatbot{% endblock %}
+
+{% block title %}GardenCircle — AI Chatbot{% endblock %}
+
 {% block content %}
-    <section class="card">
-      <header class="section-header">
-        <h2>AI Chatbot</h2>
-        <p class="muted">Coming soon.</p>
-      </header>
-      <div class="chat-window">
-        <div class="chat-row"><div class="chat-bubble chat-bot"><strong class="muted">Bot</strong><div>Chatbot coming soon</div></div></div>
+  <!-- Markdown Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+  <section class="card">
+    <header class="section-header">
+      <h2>🤖 AI Chatbot</h2>
+      <p class="muted">Tvoj osobný asistent pre rastliny — opýtaj sa na čokoľvek o pestovaní a starostlivosti o rastliny</p>
+    </header>
+    
+    <div id="chatWindow" class="chat-window" role="log" aria-live="polite">
+      <div id="welcomeMessage" class="chat-bubble chat-bot welcome-message">
+        <div style="font-size: 2rem; margin-bottom: var(--space-sm);">🌱</div>
+        <div class="message-content markdown-content">
+          <p><strong>Vitaj v AI asistentovi GardenCircle!</strong></p>
+          <p>Môžem ti pomôcť s otázkami o rastlinách, starostlivosti, pestovaní a ďalších témach súvisiacich s prírodou. Čo by si sa chcel opýtať?</p>
+          <p style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-md);">
+            <strong>Príklady otázok:</strong><br>
+            • "Ako často mám polievať monstera?"<br>
+            • "Moja rastlina má žlté listy, čo robiť?"<br>
+            • "Aké hnojivo je najlepšie pre sukulentné rastliny?"
+          </p>
+        </div>
       </div>
-    </section>
+    </div>
+    
+    <div class="chat-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+      <button id="clearHistoryBtn" class="btn btn-ghost btn-small" style="display: none;">
+        🗑️ Vymazať históriu
+      </button>
+      <span id="historyInfo" class="muted" style="font-size: var(--font-size-sm);"></span>
+    </div>
+    
+    <form id="chatForm" class="chat-form" aria-label="Chat s AI asistentom">
+      <div class="chat-input-wrapper">
+        <input 
+          id="chatInput" 
+          type="text" 
+          placeholder="Napíš svoju otázku o rastlinách..." 
+          required
+          autocomplete="off"
+          aria-label="Správa pre chatbot"
+        >
+        <button type="submit" class="btn btn-primary" id="sendBtn">
+          <span class="btn-text">Odoslať</span>
+          <span class="btn-loading" style="display: none;">⏳</span>
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <script>
+    (() => {
+      const chatWindow = document.getElementById('chatWindow');
+      const chatForm = document.getElementById('chatForm');
+      const chatInput = document.getElementById('chatInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const btnText = sendBtn.querySelector('.btn-text');
+      const btnLoading = sendBtn.querySelector('.btn-loading');
+
+      // Configure marked.js for markdown rendering
+      if (typeof marked !== 'undefined') {
+        marked.setOptions({
+          breaks: true,  // Convert line breaks to <br>
+          gfm: true,    // GitHub Flavored Markdown
+          headerIds: false,
+          mangle: false
+        });
+      }
+
+      function appendMessage(role, text) {
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble ${role === 'user' ? 'chat-user' : 'chat-bot'}`;
+        
+        if (role === 'user') {
+          // User messages: plain text (no markdown)
+          bubble.innerHTML = `<div class="message-header"><strong>Ty:</strong></div><div class="message-content">${escapeHtml(text)}</div>`;
+        } else {
+          // Bot messages: render markdown
+          const header = '<div class="message-header"><strong>AI:</strong></div>';
+          let content = '';
+          
+          if (typeof marked !== 'undefined') {
+            try {
+              // Render markdown
+              content = marked.parse(text);
+            } catch (e) {
+              // Fallback to plain text if markdown parsing fails
+              content = escapeHtml(text);
+            }
+          } else {
+            // Fallback if marked.js didn't load
+            content = escapeHtml(text);
+          }
+          
+          bubble.innerHTML = header + `<div class="message-content markdown-content">${content}</div>`;
+        }
+        
+        chatWindow.appendChild(bubble);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function setLoading(isLoading) {
+        sendBtn.disabled = isLoading;
+        chatInput.disabled = isLoading;
+        if (isLoading) {
+          btnText.style.display = 'none';
+          btnLoading.style.display = 'inline';
+        } else {
+          btnText.style.display = 'inline';
+          btnLoading.style.display = 'none';
+        }
+      }
+
+      chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        // Add user message
+        appendMessage('user', message);
+        chatInput.value = '';
+
+        // Show loading
+        setLoading(true);
+        const loadingBubble = document.createElement('div');
+        loadingBubble.className = 'chat-bubble chat-bot';
+        loadingBubble.innerHTML = '<strong>AI:</strong> <span class="loading-dots">⏳ Myslím...</span>';
+        chatWindow.appendChild(loadingBubble);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        try {
+          const response = await fetch('/api/chatbot', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message })
+          });
+
+          const data = await response.json();
+          
+          // Remove loading bubble
+          loadingBubble.remove();
+
+          if (response.ok && data.reply) {
+            appendMessage('bot', data.reply);
+          } else {
+            const errorMsg = data.error || 'Prepáč, nastala chyba pri komunikácii s AI.';
+            appendMessage('bot', `❌ ${errorMsg}`);
+          }
+        } catch (error) {
+          loadingBubble.remove();
+          appendMessage('bot', `❌ Chyba pri komunikácii: ${error.message}`);
+        } finally {
+          setLoading(false);
+          chatInput.focus();
+        }
+      });
+
+      // Load chat history on page load
+      async function loadChatHistory() {
+        try {
+          const response = await fetch('/api/chatbot/history');
+          const data = await response.json();
+          
+          if (response.ok && data.history && data.history.length > 0) {
+            // Clear chat window (remove welcome message)
+            chatWindow.innerHTML = '';
+            
+            // Show clear button
+            const clearBtn = document.getElementById('clearHistoryBtn');
+            if (clearBtn) {
+              clearBtn.style.display = 'inline-flex';
+            }
+            
+            // Update history info
+            const historyInfo = document.getElementById('historyInfo');
+            if (historyInfo) {
+              historyInfo.textContent = `${data.history.length} správ v histórii`;
+            }
+            
+            // Load all messages
+            data.history.forEach(msg => {
+              appendMessage(msg.role, msg.message);
+            });
+          } else {
+            // Show welcome message if no history
+            const welcomeMsg = document.getElementById('welcomeMessage');
+            if (welcomeMsg) {
+              welcomeMsg.style.display = 'block';
+            }
+            
+            const clearBtn = document.getElementById('clearHistoryBtn');
+            if (clearBtn) {
+              clearBtn.style.display = 'none';
+            }
+          }
+        } catch (error) {
+          console.error('Error loading chat history:', error);
+          // Show welcome message on error
+          const welcomeMsg = document.getElementById('welcomeMessage');
+          if (welcomeMsg) {
+            welcomeMsg.style.display = 'block';
+          }
+        }
+      }
+
+      // Clear chat history
+      const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+      if (clearHistoryBtn) {
+        clearHistoryBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (!confirm('Naozaj chcete vymazať celú históriu konverzácií?')) {
+            return;
+          }
+          
+          try {
+            const response = await fetch('/api/chatbot/clear', {
+              method: 'POST'
+            });
+            
+            if (response.ok) {
+              // Clear chat window
+              chatWindow.innerHTML = '';
+              
+              // Recreate and show welcome message
+              const welcomeMsg = document.getElementById('welcomeMessage');
+              if (welcomeMsg) {
+                chatWindow.appendChild(welcomeMsg);
+                welcomeMsg.style.display = 'block';
+              } else {
+                // Recreate welcome message if it was removed
+                const newWelcome = document.createElement('div');
+                newWelcome.id = 'welcomeMessage';
+                newWelcome.className = 'chat-bubble chat-bot welcome-message';
+                newWelcome.innerHTML = `
+                  <div style="font-size: 2rem; margin-bottom: var(--space-sm);">🌱</div>
+                  <div class="message-content markdown-content">
+                    <p><strong>Vitaj v AI asistentovi GardenCircle!</strong></p>
+                    <p>Môžem ti pomôcť s otázkami o rastlinách, starostlivosti, pestovaní a ďalších témach súvisiacich s prírodou. Čo by si sa chcel opýtať?</p>
+                    <p style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-md);">
+                      <strong>Príklady otázok:</strong><br>
+                      • "Ako často mám polievať monstera?"<br>
+                      • "Moja rastlina má žlté listy, čo robiť?"<br>
+                      • "Aké hnojivo je najlepšie pre sukulentné rastliny?"
+                    </p>
+                  </div>
+                `;
+                chatWindow.appendChild(newWelcome);
+              }
+              
+              // Hide clear button
+              clearHistoryBtn.style.display = 'none';
+              
+              // Clear history info
+              const historyInfo = document.getElementById('historyInfo');
+              if (historyInfo) {
+                historyInfo.textContent = '';
+              }
+            }
+          } catch (error) {
+            console.error('Error clearing chat history:', error);
+            alert('Chyba pri vymazávaní histórie');
+          }
+        });
+      }
+
+      // Update clear button visibility when new messages are added
+      const originalAppendMessage = appendMessage;
+      appendMessage = function(role, text) {
+        originalAppendMessage(role, text);
+        
+        // Show clear button if there are messages (excluding welcome)
+        const messages = chatWindow.querySelectorAll('.chat-bubble:not(.welcome-message)');
+        if (messages.length > 0) {
+          const clearBtn = document.getElementById('clearHistoryBtn');
+          if (clearBtn) {
+            clearBtn.style.display = 'inline-flex';
+          }
+          
+          // Update history info
+          const historyInfo = document.getElementById('historyInfo');
+          if (historyInfo) {
+            historyInfo.textContent = `${messages.length} správ`;
+          }
+        }
+      };
+
+      // Load history on page load
+      loadChatHistory();
+
+      // Focus input on load
+      chatInput.focus();
+    })();
+  </script>
+
+  <style>
+    .chat-window {
+      min-height: 400px;
+      max-height: 600px;
+      overflow-y: auto;
+      border: 1px solid rgba(22, 160, 133, 0.2);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      margin-bottom: var(--space-lg);
+      background: rgba(255, 255, 255, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .chat-bubble {
+      padding: var(--space-md) var(--space-lg);
+      border-radius: var(--radius-lg);
+      max-width: 85%;
+      word-wrap: break-word;
+      line-height: var(--line-height-relaxed);
+    }
+
+    .chat-bubble.chat-user {
+      background: rgba(22, 160, 133, 0.15);
+      border: 1px solid rgba(22, 160, 133, 0.3);
+      align-self: flex-end;
+      margin-left: auto;
+    }
+
+    .chat-bubble.chat-bot {
+      background: rgba(236, 249, 246, 0.9);
+      border: 1px solid rgba(22, 160, 133, 0.2);
+      align-self: flex-start;
+    }
+
+    .chat-bubble.welcome-message {
+      text-align: center;
+      max-width: 100%;
+      background: linear-gradient(135deg, rgba(22, 160, 133, 0.1) 0%, rgba(30, 188, 156, 0.1) 100%);
+    }
+
+    .message-header {
+      margin-bottom: var(--space-xs);
+      font-size: var(--font-size-sm);
+      opacity: 0.8;
+    }
+
+    .message-content {
+      line-height: var(--line-height-relaxed);
+    }
+
+    /* Markdown Styling */
+    .markdown-content {
+      color: var(--text-dark);
+    }
+
+    .markdown-content h1,
+    .markdown-content h2,
+    .markdown-content h3,
+    .markdown-content h4,
+    .markdown-content h5,
+    .markdown-content h6 {
+      margin-top: var(--space-md);
+      margin-bottom: var(--space-sm);
+      font-weight: 700;
+      color: var(--primary-green);
+      line-height: var(--line-height-tight);
+    }
+
+    .markdown-content h1 {
+      font-size: var(--font-size-2xl);
+      border-bottom: 2px solid rgba(22, 160, 133, 0.2);
+      padding-bottom: var(--space-xs);
+    }
+
+    .markdown-content h2 {
+      font-size: var(--font-size-xl);
+    }
+
+    .markdown-content h3 {
+      font-size: var(--font-size-lg);
+    }
+
+    .markdown-content p {
+      margin-bottom: var(--space-md);
+    }
+
+    .markdown-content ul,
+    .markdown-content ol {
+      margin: var(--space-md) 0;
+      padding-left: var(--space-xl);
+    }
+
+    .markdown-content li {
+      margin-bottom: var(--space-xs);
+    }
+
+    .markdown-content ul {
+      list-style-type: disc;
+    }
+
+    .markdown-content ol {
+      list-style-type: decimal;
+    }
+
+    .markdown-content code {
+      background: rgba(22, 160, 133, 0.1);
+      padding: 0.2em 0.4em;
+      border-radius: var(--radius-sm);
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      color: var(--primary-green-dark);
+    }
+
+    .markdown-content pre {
+      background: rgba(22, 160, 133, 0.1);
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      margin: var(--space-md) 0;
+      border-left: 3px solid var(--primary-green);
+    }
+
+    .markdown-content pre code {
+      background: none;
+      padding: 0;
+      color: var(--text-dark);
+    }
+
+    .markdown-content blockquote {
+      border-left: 4px solid var(--primary-green);
+      padding-left: var(--space-md);
+      margin: var(--space-md) 0;
+      color: var(--text-medium);
+      font-style: italic;
+      background: rgba(22, 160, 133, 0.05);
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+    }
+
+    .markdown-content a {
+      color: var(--primary-green);
+      text-decoration: none;
+      font-weight: 600;
+      border-bottom: 1px solid transparent;
+      transition: var(--transition-fast);
+    }
+
+    .markdown-content a:hover {
+      border-bottom-color: var(--primary-green);
+      color: var(--primary-green-dark);
+    }
+
+    .markdown-content strong {
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .markdown-content em {
+      font-style: italic;
+      color: var(--text-medium);
+    }
+
+    .markdown-content hr {
+      border: none;
+      border-top: 2px solid rgba(22, 160, 133, 0.2);
+      margin: var(--space-lg) 0;
+    }
+
+    .markdown-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: var(--space-md) 0;
+    }
+
+    .markdown-content table th,
+    .markdown-content table td {
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid rgba(22, 160, 133, 0.2);
+    }
+
+    .markdown-content table th {
+      background: rgba(22, 160, 133, 0.1);
+      font-weight: 700;
+      color: var(--primary-green);
+    }
+
+    .markdown-content table tr:nth-child(even) {
+      background: rgba(22, 160, 133, 0.05);
+    }
+
+    .chat-form {
+      display: flex;
+      gap: var(--space-sm);
+    }
+
+    .chat-input-wrapper {
+      display: flex;
+      gap: var(--space-sm);
+      width: 100%;
+    }
+
+    .chat-input-wrapper input {
+      flex: 1;
+      padding: var(--space-md) var(--space-lg);
+      border: 2px solid rgba(22, 160, 133, 0.2);
+      border-radius: var(--radius-lg);
+      font-size: var(--font-size-base);
+      font-family: inherit;
+      transition: var(--transition-fast);
+    }
+
+    .chat-input-wrapper input:focus {
+      outline: none;
+      border-color: var(--primary-green);
+      box-shadow: 0 0 0 4px rgba(22, 160, 133, 0.1);
+    }
+
+    .chat-input-wrapper button {
+      white-space: nowrap;
+    }
+
+    .loading-dots {
+      display: inline-block;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @media (max-width: 768px) {
+      .chat-window {
+        min-height: calc(100vh - 400px);
+        max-height: calc(100vh - 300px);
+        padding: var(--space-md);
+        margin-bottom: var(--space-md);
+        border-radius: var(--radius-lg);
+      }
+
+      .chat-bubble {
+        max-width: 85%;
+        padding: var(--space-md);
+        font-size: var(--font-size-base);
+      }
+
+      .chat-bubble.chat-user {
+        max-width: 80%;
+      }
+
+      .chat-bubble.chat-bot {
+        max-width: 85%;
+      }
+
+      .chat-form {
+        margin-bottom: calc(80px + var(--space-md)); /* Space for bottom nav */
+      }
+
+      .chat-input-wrapper {
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+
+      .chat-input-wrapper input {
+        min-height: 48px;
+        font-size: 16px; /* Prevent zoom on iOS */
+        padding: var(--space-md);
+      }
+
+      .chat-input-wrapper button {
+        width: 100%;
+        min-height: 48px;
+        padding: var(--space-md);
+      }
+
+      .chat-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+      }
+
+      .chat-actions button {
+        width: 100%;
+        min-height: 44px;
+      }
+
+      .message-content {
+        font-size: var(--font-size-base);
+        line-height: 1.6;
+      }
+
+      .markdown-content {
+        font-size: var(--font-size-base);
+      }
+
+      .markdown-content h1 {
+        font-size: var(--font-size-xl);
+      }
+
+      .markdown-content h2 {
+        font-size: var(--font-size-lg);
+      }
+
+      .markdown-content h3 {
+        font-size: var(--font-size-base);
+      }
+
+      .markdown-content pre {
+        padding: var(--space-md);
+        font-size: var(--font-size-sm);
+        overflow-x: auto;
+      }
+
+      .markdown-content code {
+        font-size: 0.85em;
+        padding: 0.15em 0.3em;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chat-window {
+        min-height: calc(100vh - 350px);
+        max-height: calc(100vh - 250px);
+        padding: var(--space-sm);
+      }
+
+      .chat-bubble {
+        max-width: 90%;
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--font-size-sm);
+      }
+
+      .message-header {
+        font-size: var(--font-size-xs);
+      }
+    }
+  </style>
 {% endblock %}
-
-

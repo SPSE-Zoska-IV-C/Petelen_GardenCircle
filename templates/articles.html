@@ -1,24 +1,47 @@
 {% extends 'base.html' %}
-{% block title %}GardenCircle — články{% endblock %}
+
+{% block title %}GardenCircle — Články{% endblock %}
+
 {% block content %}
-    <section class="card">
-      <header class="section-header">
-        <h2>Články</h2>
-        <p class="muted">Tipy a návody o rastlinách</p>
-      </header>
-      <div class="articles-grid">
-        {% for a in items %}
-          <article class="article-card">
-            {% if a.image_path %}<img src="{{ a.image_path }}" alt="{{ a.title }}" style="width:100%;border-radius:12px;margin-bottom:.5rem">{% endif %}
-            <h3>{{ a.title }}</h3>
-            <p>{{ a.content }}</p>
-            <small class="muted">{{ a.created_at }}</small>
-          </article>
-        {% else %}
-          <p class="muted">Zatiaľ žiadne články.</p>
-        {% endfor %}
-      </div>
-    </section>
+  <section class="card">
+    <header class="section-header">
+      <h2>Články</h2>
+      <p class="muted">Tipy a návody pre starostlivosť o tvoje rastliny</p>
+    </header>
+    
+    <div class="articles-grid">
+      {% for a in items %}
+        {% set img_src = a.image_path %}
+        {% set resolved_src = None %}
+        {% if img_src %}
+          {% if img_src.startswith('http') %}
+            {% set resolved_src = img_src %}
+          {% elif img_src.startswith('/static/') %}
+            {% set resolved_src = img_src %}
+          {% else %}
+            {% set resolved_src = url_for('static', filename=img_src) %}
+          {% endif %}
+        {% endif %}
+        <article class="article-card fade-in">
+          <a href="{{ url_for('article_detail', article_id=a.id) }}" class="article-card-link" aria-label="Článok {{ a.title }}">
+            {% if resolved_src %}
+              <img src="{{ resolved_src }}" alt="{{ a.title }}" loading="lazy">
+            {% else %}
+              <img src="{{ url_for('static', filename='img/leaf.svg') }}" alt="{{ a.title }}" loading="lazy" style="background: var(--light-green);">
+            {% endif %}
+            <div class="content">
+              <h3>{{ a.title }}</h3>
+              <p>{{ a.content[:150] }}{% if a.content|length > 150 %}&hellip;{% endif %}</p>
+              <small class="muted">{{ a.created_at }}</small>
+            </div>
+          </a>
+        </article>
+      {% else %}
+        <div class="text-center" style="grid-column: 1 / -1; padding: var(--space-2xl);">
+          <p class="muted" style="font-size: var(--font-size-lg);">Zatiaľ žiadne články</p>
+          <p class="muted">Skúste to neskôr znova</p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
 {% endblock %}
-
-

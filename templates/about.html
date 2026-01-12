@@ -1,13 +1,66 @@
 {% extends 'base.html' %}
+
+{% block body_class %}bg-leaf{% endblock %}
+
 {% block title %}GardenCircle — O projekte{% endblock %}
+
 {% block content %}
-<section class="card">
-  <header class="section-header">
-    <h2>O projekte</h2>
-    <p class="muted">GardenCircle spája ľudí, ktorí milujú rastliny.</p>
-  </header>
-  <p>Našim cieľom je vytvoriť priateľskú komunitu, kde si môžeš vymieňať skúsenosti, pýtať sa na rady a inšpirovať sa. Veríme v udržateľnosť, zdieľanie poznatkov a radosť z prírody.</p>
-</section>
+  <section class="hero card hero-card">
+    <div class="hero-inner">
+      <div>
+        <h2>O projekte GardenCircle</h2>
+        <p class="muted">Spájame milovníkov rastlín v jednej modernej komunite</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <header class="section-header">
+      <h2>Naša misia</h2>
+      <p class="muted">Čo nás inšpiruje</p>
+    </header>
+    
+    <div style="max-width: 800px;">
+      <p style="font-size: var(--font-size-lg); line-height: var(--line-height-relaxed); margin-bottom: var(--space-lg);">
+        Našim cieľom je vytvoriť priateľskú komunitu, kde si môžeš vymieňať skúsenosti, pýtať sa na rady a inšpirovať sa. Veríme v udržateľnosť, zdieľanie poznatkov a radosť z prírody.
+      </p>
+      
+      <p style="line-height: var(--line-height-relaxed); color: var(--text-medium);">
+        GardenCircle je viac ako len webová aplikácia – je to miesto, kde sa zbieha zručnosť, vášeň a spoločenská zodpovednosť. Každý, kto má záujem o rastliny a prírodu, je vítaný. Poskytujeme prostredie, kde môžeš rásť, učiť sa a zdieľať svoju lásku k prírode s ostatnými.
+      </p>
+    </div>
+  </section>
+
+  <section class="card">
+    <header class="section-header">
+      <h2>Čo ti ponúkame</h2>
+      <p class="muted">Všetko na jednom mieste</p>
+    </header>
+    
+    <div class="feature-grid">
+      <div class="feature-item">
+        <div class="icon">🤝</div>
+        <h3>Komunita</h3>
+        <p>Pripoj sa k komunite milovníkov rastlín a zdieľaj skúsenosti</p>
+      </div>
+      
+      <div class="feature-item">
+        <div class="icon">📖</div>
+        <h3>Vzdelávanie</h3>
+        <p>Staň sa expertom s našimi článkami a návodmi</p>
+      </div>
+      
+      <div class="feature-item">
+        <div class="icon">💡</div>
+        <h3>Tipy a triky</h3>
+        <p>Objav osvedčené postupy a tipy na pestovanie</p>
+      </div>
+      
+      <div class="feature-item">
+        <div class="icon">🌟</div>
+        <h3>Inšpirácia</h3>
+        <p>Nájdite inšpiráciu v prírode a udržateľnosti</p>
+      </div>
+    </div>
+  </section>
 {% endblock %}
-
-
