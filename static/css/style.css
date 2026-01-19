@@ -104,6 +104,8 @@
   --gray-50: #0f1714;
   --gray-100: #0d1b18; /* surface base */
   --gray-200: #162a24;
+  --border-soft-green: rgba(46, 204, 113, 0.35);
+  --border-soft-green-strong: rgba(46, 204, 113, 0.5);
   --text-dark: #e6f6ef; /* primary readable text on dark */
   --text-medium: #bfd9cc;
   --text-light: #9fbbae;
@@ -159,7 +161,11 @@
 [data-theme="dark"] p,
 [data-theme="dark"] li,
 [data-theme="dark"] label {
-  color: var(--on-surface);
+  color: #ffffff !important;              /* pure white text */
+  background: none !important;            /* no gradient blocks */
+  -webkit-text-fill-color: #ffffff !important;
+  background-image: none !important;
+  -webkit-background-clip: border-box !important;
 }
 
 /* Slightly dim less important text */
@@ -1695,6 +1701,102 @@ textarea {
   background-color: rgba(248, 253, 251, 0.97);
   box-shadow: 0 14px 32px rgba(9, 60, 48, 0.14);
   backdrop-filter: blur(8px);
+}
+
+/* Dark theme hardening for contrast across all surfaces */
+[data-theme="dark"] .card,
+[data-theme="dark"] .post-card,
+[data-theme="dark"] .post-card-modern,
+[data-theme="dark"] .post-detail-card .post-card,
+[data-theme="dark"] .comment-section-inline,
+[data-theme="dark"] .create-post-card,
+[data-theme="dark"] .post-form,
+[data-theme="dark"] .admin-panel-card,
+[data-theme="dark"] .admin-panel-section,
+[data-theme="dark"] .feature-item,
+[data-theme="dark"] .article-card,
+[data-theme="dark"] .post-search-container,
+[data-theme="dark"] .post-search-input,
+[data-theme="dark"] .auto-answer-menu,
+[data-theme="dark"] .post-list,
+[data-theme="dark"] .news-card,
+[data-theme="dark"] .profile-card,
+[data-theme="dark"] .settings-card {
+  background: linear-gradient(180deg, rgba(15, 25, 22, 0.94) 0%, rgba(7, 14, 12, 0.96) 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--on-surface);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .comment-list li,
+[data-theme="dark"] .article-card .actions,
+[data-theme="dark"] .post-card-modern .post-actions-modern,
+[data-theme="dark"] .post-actions,
+[data-theme="dark"] .action-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .hero,
+[data-theme="dark"] .post-form {
+  background: linear-gradient(135deg, rgba(10, 21, 18, 0.9) 0%, rgba(7, 17, 14, 0.92) 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .hero::before {
+  background: linear-gradient(135deg, rgba(15, 31, 26, 0.88) 0%, rgba(9, 17, 14, 0.9) 100%);
+}
+
+[data-theme="dark"] .post-card .post-header,
+[data-theme="dark"] .post-card .meta .time,
+[data-theme="dark"] .muted,
+[data-theme="dark"] .text-muted {
+  color: var(--text-medium);
+}
+
+[data-theme="dark"] .post-actions-modern,
+[data-theme="dark"] .post-actions {
+  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .article-card .meta {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .post-search-input,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--on-surface);
+}
+
+[data-theme="dark"] .post-search-input:focus,
+[data-theme="dark"] input[type="text"]:focus,
+[data-theme="dark"] input[type="email"]:focus,
+[data-theme="dark"] input[type="password"]:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.18);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+[data-theme="dark"] .bottom-nav {
+  background: rgba(10, 20, 17, 0.94);
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .bottom-nav-item {
+  color: var(--text-light);
+}
+
+[data-theme="dark"] .bottom-nav-item.active {
+  color: #7ef1c0;
 }
 
 .admin-form {
