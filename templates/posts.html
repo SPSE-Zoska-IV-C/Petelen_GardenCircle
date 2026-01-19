@@ -67,7 +67,15 @@
             <div class="post-card-header">
               <a href="{{ url_for('user_profile', username=p.author) }}" class="post-author-link">
                 <div class="post-author-avatar">
-                  <div class="avatar-placeholder-small">{{ p.author[0].upper() }}</div>
+                  {% if p.author_image %}
+                    {% if p.author_image.startswith('http') %}
+                      <img src="{{ p.author_image }}" alt="{{ p.author }}" loading="lazy">
+                    {% else %}
+                      <img src="{{ url_for('static', filename=p.author_image) }}" alt="{{ p.author }}" loading="lazy">
+                    {% endif %}
+                  {% else %}
+                    <div class="avatar-placeholder-small">{{ p.author[0].upper() }}</div>
+                  {% endif %}
                 </div>
                 <div class="post-author-info">
                   <strong class="post-author-name">{{ p.author }}</strong>

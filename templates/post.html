@@ -7,13 +7,24 @@
 {% block content %}
   <section class="card post-detail-card">
     <div class="post-card">
-      <div class="post-header">
-        <div class="meta">
-          <a href="{{ url_for('user_profile', username=post.author) }}" style="text-decoration: none; color: var(--primary-green);">
+      <div class="post-header" style="display:flex; gap: var(--space-md); align-items:center;">
+        <a href="{{ url_for('user_profile', username=post.author) }}" class="post-author-link" style="text-decoration:none; display:flex; align-items:center; gap: var(--space-sm);">
+          <div class="post-author-avatar">
+            {% if post.author_image %}
+              {% if post.author_image.startswith('http') %}
+                <img src="{{ post.author_image }}" alt="{{ post.author }}" loading="lazy">
+              {% else %}
+                <img src="{{ url_for('static', filename=post.author_image) }}" alt="{{ post.author }}" loading="lazy">
+              {% endif %}
+            {% else %}
+              <div class="avatar-placeholder-small">{{ post.author[0].upper() }}</div>
+            {% endif %}
+          </div>
+          <div class="meta">
             <strong class="author">{{ post.author }}</strong>
-          </a>
-          <time class="time">{{ post.created_at }}</time>
-        </div>
+            <time class="time">{{ post.created_at }}</time>
+          </div>
+        </a>
       </div>
       <div class="post-content">
         {{ post.content }}
@@ -44,13 +55,43 @@
           <span class="muted small-text" id="autoAnswerStatus" hidden>Vyber dĺžku odpovede.</span>
         </div>
       </header>
+
+      <div id="aiAnswerPreview" class="card" style="display:none; margin-top: var(--space-md); padding: var(--space-lg);">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap: var(--space-md);">
+          <div style="min-width:0;">
+            <strong>🤖 AI odpoveď (iba pre teba)</strong>
+            <div class="muted" style="margin-top: var(--space-xs);">Táto odpoveď sa neuloží do komentárov.</div>
+          </div>
+          <button type="button" class="btn btn-ghost small" id="aiAnswerDismiss" aria-label="Skryť AI odpoveď">✕</button>
+        </div>
+        <div id="aiAnswerText" style="margin-top: var(--space-md); white-space: pre-wrap;"></div>
+      </div>
       
       <ul class="comment-list">
         {% for c in comments %}
           <li>
-            <strong>{{ c.author }}</strong>
-            <span class="muted"> • {{ c.created_at }}</span>
-            <div style="margin-top: var(--space-xs);">{{ c.text }}</div>
+            <div style="display:flex; gap: var(--space-sm); align-items:flex-start;">
+              <a href="{{ url_for('user_profile', username=c.author) if c.author_id else '#' }}" style="text-decoration:none;">
+                <div class="post-author-avatar" style="width:44px; height:44px;">
+                  {% if c.author_image %}
+                    {% if c.author_image.startswith('http') %}
+                      <img src="{{ c.author_image }}" alt="{{ c.author }}" loading="lazy">
+                    {% else %}
+                      <img src="{{ url_for('static', filename=c.author_image) }}" alt="{{ c.author }}" loading="lazy">
+                    {% endif %}
+                  {% else %}
+                    <div class="avatar-placeholder-small">{{ c.author[0].upper() }}</div>
+                  {% endif %}
+                </div>
+              </a>
+              <div style="min-width:0; flex:1;">
+                <a href="{{ url_for('user_profile', username=c.author) if c.author_id else '#' }}" style="text-decoration:none;">
+                  <strong>{{ c.author }}</strong>
+                </a>
+                <span class="muted"> • {{ c.created_at }}</span>
+                <div style="margin-top: var(--space-xs);">{{ c.text }}</div>
+              </div>
+            </div>
           </li>
         {% else %}
           <li class="muted text-center" style="padding: var(--space-lg);">
@@ -73,6 +114,9 @@
     const autoAnswerMenu = document.getElementById('autoAnswerMenu');
     const autoAnswerStatus = document.getElementById('autoAnswerStatus');
     const commentList = document.querySelector('.comment-list');
+    const aiAnswerPreview = document.getElementById('aiAnswerPreview');
+    const aiAnswerText = document.getElementById('aiAnswerText');
+    const aiAnswerDismiss = document.getElementById('aiAnswerDismiss');
 
     function escapeHtml(text) {
       const div = document.createElement('div');
@@ -80,20 +124,17 @@
       return div.innerHTML;
     }
 
-    function appendComment(author, text) {
-      if (!commentList) return;
-      const emptyState = commentList.querySelector('.muted.text-center');
-      if (emptyState) {
-        emptyState.remove();
-      }
+    function showAiPreview(author, text) {
+      if (!aiAnswerPreview || !aiAnswerText) return;
+      aiAnswerText.innerHTML = `<strong>${escapeHtml(author)}</strong><div style="margin-top: var(--space-xs);">${escapeHtml(text)}</div>`;
+      aiAnswerPreview.style.display = 'block';
+      aiAnswerPreview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <strong>${escapeHtml(author)}</strong>
-        <span class="muted"> • práve teraz</span>
-        <div style="margin-top: var(--space-xs);">${escapeHtml(text)}</div>
-      `;
-      commentList.appendChild(li);
+    function hideAiPreview() {
+      if (!aiAnswerPreview || !aiAnswerText) return;
+      aiAnswerText.textContent = '';
+      aiAnswerPreview.style.display = 'none';
     }
 
     function setStatus(message, show = true) {
@@ -138,8 +179,8 @@
           throw new Error(data.error || 'Nepodarilo sa načítať odpoveď.');
         }
 
-        appendComment(data.author || 'GardenCircle Guide', data.text || '');
-        setStatus('Odpoveď AI bola pridaná.');
+        showAiPreview(data.author || 'GardenCircle Guide', data.text || '');
+        setStatus('Odpoveď AI bola zobrazená (neukladá sa).');
         closeAnswerMenu();
       } catch (error) {
         console.error(error);
@@ -179,6 +220,10 @@
           requestAutoAnswer(postId, length, btn);
         });
       });
+    }
+
+    if (aiAnswerDismiss) {
+      aiAnswerDismiss.addEventListener('click', hideAiPreview);
     }
   </script>
 {% endblock %}

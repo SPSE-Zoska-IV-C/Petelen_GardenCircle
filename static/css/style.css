@@ -2186,12 +2186,23 @@ textarea {
   resize: vertical;
   transition: var(--transition);
   background: rgba(255, 255, 255, 0.95);
+  color: var(--text-dark);
 }
 
 .post-input-wrapper textarea:focus {
   border-color: var(--primary-green);
   box-shadow: 0 0 0 4px rgba(22, 160, 133, 0.1);
   background: rgba(247, 253, 251, 0.95);
+}
+
+[data-theme="dark"] .post-input-wrapper textarea {
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: var(--on-surface) !important;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] .post-input-wrapper textarea::placeholder {
+  color: var(--text-light);
 }
 
 .image-preview {

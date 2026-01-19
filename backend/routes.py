@@ -222,6 +222,17 @@ def register_routes(app):
         # Bulk fetch all like counts and comment counts in 2 queries instead of N queries
         post_ids = [r[0] for r in rows]
         placeholders = ','.join('?' * len(post_ids))
+
+        # Fetch author avatars for all authors in this page
+        author_ids = [r[1] for r in rows if r[1] is not None]
+        author_map = {}
+        if author_ids:
+            author_placeholders = ','.join('?' * len(author_ids))
+            author_rows = db.execute(
+                f"SELECT id, profile_image FROM users WHERE id IN ({author_placeholders})",
+                author_ids
+            ).fetchall()
+            author_map = {row[0]: row[1] for row in author_rows}
         
         # Get all like counts in one query
         like_counts = db.execute(
@@ -252,6 +263,7 @@ def register_routes(app):
                 "id": r[0],
                 "author_id": r[1],
                 "author": r[2],
+                "author_image": author_map.get(r[1]),
                 "content": r[3],
                 "created_at": r[4],
                 "image_path": r[5],
@@ -303,6 +315,17 @@ def register_routes(app):
             # Bulk fetch counts
             post_ids = [r[0] for r in rows]
             placeholders = ','.join('?' * len(post_ids))
+
+            # Fetch author avatars
+            author_ids = [r[1] for r in rows if r[1] is not None]
+            author_map = {}
+            if author_ids:
+                author_placeholders = ','.join('?' * len(author_ids))
+                author_rows = db.execute(
+                    f"SELECT id, profile_image FROM users WHERE id IN ({author_placeholders})",
+                    author_ids
+                ).fetchall()
+                author_map = {row[0]: row[1] for row in author_rows}
             
             like_counts = db.execute(
                 f"SELECT post_id, COUNT(*) as count FROM likes WHERE post_id IN ({placeholders}) GROUP BY post_id",
@@ -327,8 +350,16 @@ def register_routes(app):
             data = []
             for r in rows:
                 data.append({
-                    "id": r[0], "author_id": r[1], "author": r[2], "content": r[3], "created_at": r[4], "image_path": r[5],
-                    "like_count": like_counts_dict.get(r[0], 0), "liked": r[0] in liked_posts, "comment_count": comment_counts_dict.get(r[0], 0)
+                    "id": r[0],
+                    "author_id": r[1],
+                    "author": r[2],
+                    "author_image": author_map.get(r[1]),
+                    "content": r[3],
+                    "created_at": r[4],
+                    "image_path": r[5],
+                    "like_count": like_counts_dict.get(r[0], 0),
+                    "liked": r[0] in liked_posts,
+                    "comment_count": comment_counts_dict.get(r[0], 0)
                 })
             return jsonify(data)
 
@@ -345,10 +376,44 @@ def register_routes(app):
             "SELECT id, author_id, author, text, created_at FROM comments WHERE post_id=? ORDER BY created_at ASC",
             (post_id,),
         ).fetchall()
+        comment_author_ids = [r[1] for r in comments if r[1] is not None]
+        comment_author_map = {}
+        if comment_author_ids:
+            ca_placeholders = ','.join('?' * len(comment_author_ids))
+            comment_author_rows = db.execute(
+                f"SELECT id, profile_image FROM users WHERE id IN ({ca_placeholders})",
+                comment_author_ids
+            ).fetchall()
+            comment_author_map = {row[0]: row[1] for row in comment_author_rows}
+
         comments_fmt = [
-            {"id": r[0], "author_id": r[1], "author": r[2], "text": r[3], "created_at": r[4]} for r in comments
+            {
+                "id": r[0],
+                "author_id": r[1],
+                "author": r[2],
+                "author_image": comment_author_map.get(r[1]),
+                "text": r[3],
+                "created_at": r[4]
+            } for r in comments
         ]
-        post = {"id": pc[0], "author_id": pc[1], "author": pc[2], "content": pc[3], "created_at": pc[4], "image_path": pc[5], "like_count": like_count, "liked": liked}
+        post_author_image = None
+        if pc[1]:
+            post_author_image = comment_author_map.get(pc[1])
+            if post_author_image is None:
+                row = db.execute("SELECT profile_image FROM users WHERE id=?", (pc[1],)).fetchone()
+                post_author_image = row[0] if row else None
+
+        post = {
+            "id": pc[0],
+            "author_id": pc[1],
+            "author": pc[2],
+            "author_image": post_author_image,
+            "content": pc[3],
+            "created_at": pc[4],
+            "image_path": pc[5],
+            "like_count": like_count,
+            "liked": liked
+        }
         return render_template("post.html", post=post, comments=comments_fmt)
 
     @app.route("/api/posts/<int:post_id>/comments", methods=["GET", "POST"])
@@ -360,8 +425,17 @@ def register_routes(app):
                 "SELECT id, author_id, author, text, created_at FROM comments WHERE post_id=? ORDER BY created_at ASC",
                 (post_id,),
             ).fetchall()
+            author_ids = [r[1] for r in rows if r[1] is not None]
+            author_map = {}
+            if author_ids:
+                a_placeholders = ','.join('?' * len(author_ids))
+                a_rows = db.execute(
+                    f"SELECT id, profile_image FROM users WHERE id IN ({a_placeholders})",
+                    author_ids
+                ).fetchall()
+                author_map = {row[0]: row[1] for row in a_rows}
             return jsonify([
-                {"id": r[0], "author_id": r[1], "author": r[2], "text": r[3], "created_at": r[4]} for r in rows
+                {"id": r[0], "author_id": r[1], "author": r[2], "author_image": author_map.get(r[1]), "text": r[3], "created_at": r[4]} for r in rows
             ])
         data = request.get_json(silent=True) or request.form
         text = (data.get("text") or "").strip()
@@ -373,13 +447,13 @@ def register_routes(app):
         )
         db.commit()
         if request.content_type and "application/json" in request.content_type:
-            return jsonify({"id": cur.lastrowid, "author": current_user.username, "text": text}), 201
+            return jsonify({"id": cur.lastrowid, "author": current_user.username, "author_id": current_user.id, "author_image": current_user.profile_image, "text": text}), 201
         return redirect(url_for('post_detail', post_id=post_id))
 
     @app.route("/api/posts/<int:post_id>/answer", methods=["POST"])
     @login_required
     def auto_answer_post(post_id: int):
-        """Generate a concise AI helper reply for a post and save it as a comment."""
+        """Generate a concise AI helper reply for a post (ephemeral; not saved)."""
         db = get_db()
         post = db.execute(
             "SELECT id, author, content FROM posts WHERE id=?",
@@ -441,17 +515,10 @@ def register_routes(app):
         reply = response.text.strip()
         reply = reply[:max_chars]
 
-        cur = db.execute(
-            "INSERT INTO comments(post_id, author_id, author, text) VALUES(?, ?, ?, ?)",
-            (post_id, None, "GardenCircle Guide", reply)
-        )
-        db.commit()
-
+        # Return reply only to the requesting user; do NOT persist to DB.
         return jsonify({
-            "id": cur.lastrowid,
             "author": "GardenCircle Guide",
-            "text": reply,
-            "created_at": datetime.utcnow().isoformat(timespec="seconds")
+            "text": reply
         })
 
     @app.route("/api/posts/<int:post_id>", methods=["DELETE"])
