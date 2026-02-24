@@ -40,7 +40,12 @@
           <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">✏️ Upraviť profil</a>
         {% else %}
           <form id="followForm" data-username="{{ user.username }}" style="margin: 0;">
-            <button type="submit" class="btn {{ 'btn-secondary' if is_following else 'btn-primary' }}" id="followBtn">
+            <button
+              type="submit"
+              class="btn {{ 'btn-secondary' if is_following else 'btn-primary' }}"
+              id="followBtn"
+              data-following="{{ 'true' if is_following else 'false' }}"
+            >
               {{ '👋 Unfollow' if is_following else '➕ Follow' }}
             </button>
           </form>

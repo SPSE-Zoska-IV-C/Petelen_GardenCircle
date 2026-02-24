@@ -495,12 +495,18 @@
       e.preventDefault();
       const username = followForm.getAttribute('data-username');
       const btn = document.getElementById('followBtn');
-      const isUnfollow = (btn && btn.textContent.trim().toLowerCase() === 'unfollow');
-      const url = isUnfollow ? `/unfollow/${username}` : `/follow/${username}`;
+      const isFollowingNow = btn && btn.getAttribute('data-following') === 'true';
+      const url = isFollowingNow ? `/unfollow/${username}` : `/follow/${username}`;
       const res = await fetch(url, { method: 'POST' });
       if (!res.ok) return;
       const data = await res.json();
-      if (btn) btn.textContent = data.following ? 'Unfollow' : 'Follow';
+      if (btn) {
+        // Update button visual state and data attribute based on new follow status
+        btn.setAttribute('data-following', data.following ? 'true' : 'false');
+        btn.textContent = data.following ? '👋 Unfollow' : '➕ Follow';
+        btn.classList.toggle('btn-primary', !data.following);
+        btn.classList.toggle('btn-secondary', data.following);
+      }
       const f1 = document.getElementById('followersCount');
       const f2 = document.getElementById('followingCount');
       if (f1 && typeof data.followers === 'number') f1.textContent = `Sledujúci: ${data.followers}`;

@@ -564,7 +564,9 @@ def register_routes(app):
         db.execute("INSERT OR IGNORE INTO follows(follower_id, followed_id) VALUES(?, ?)", (current_user.id, target.id))
         db.commit()
         followers = db.execute("SELECT COUNT(1) FROM follows WHERE followed_id=?", (target.id,)).fetchone()[0]
-        following = db.execute("SELECT COUNT(1) FROM follows WHERE follower_id=?", (current_user.id,)).fetchone()[0]
+        # following_count here should reflect how many users the PROFILE OWNER follows,
+        # not how many users the current viewer follows.
+        following = db.execute("SELECT COUNT(1) FROM follows WHERE follower_id=?", (target.id,)).fetchone()[0]
         return jsonify({"following": True, "followers": followers, "following_count": following})
 
     @app.route("/unfollow/<username>", methods=["POST"])
@@ -577,7 +579,8 @@ def register_routes(app):
         db.execute("DELETE FROM follows WHERE follower_id=? AND followed_id=?", (current_user.id, target.id))
         db.commit()
         followers = db.execute("SELECT COUNT(1) FROM follows WHERE followed_id=?", (target.id,)).fetchone()[0]
-        following = db.execute("SELECT COUNT(1) FROM follows WHERE follower_id=?", (current_user.id,)).fetchone()[0]
+        # As above, keep following_count tied to the profile owner.
+        following = db.execute("SELECT COUNT(1) FROM follows WHERE follower_id=?", (target.id,)).fetchone()[0]
         return jsonify({"following": False, "followers": followers, "following_count": following})
 
     @app.route("/articles")

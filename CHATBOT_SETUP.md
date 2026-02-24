@@ -38,7 +38,9 @@ The easiest and most secure way is to use a `.env` file. This is already set up 
    ```
    GOOGLE_AI_STUDIO_API_KEY=your-api-key-here
    ```
-   
+   SECRET_KEY=P10SSEsqLELyzUAb4hF8LaVRxI2fAJSmwiRSRUEGpkkYTjBq1ecmc24VxTTpjBSrYHJrO2
+   GOOGLE_AI_STUDIO_API_KEY=AIzaSyDuLxBGPBCIcpSFt9xA0P5PvPRyLI8L9y8
+
    Replace `your-api-key-here` with your actual API key from Google AI Studio.
 
 3. **The `.env` file is already configured** - `python-dotenv` is included in `requirements.txt` and the Flask app automatically loads it.
