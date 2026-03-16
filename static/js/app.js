@@ -8,7 +8,11 @@
   // Initialize all components when DOM is ready
   function initAll() {
     initThemeToggle();
-    sanitizePostInlineStyles();
+    // Only run the sanitizer on pages that actually render user content.
+    if (document.querySelector('.post-content, .post-content-text, .comment-list')) {
+      sanitizePostInlineStyles();
+      observeAndSanitize();
+    }
   }
   
   if (document.readyState === 'loading') {
@@ -120,41 +124,42 @@
   // Observe DOM mutations to sanitize dynamically inserted/updated content
   function observeAndSanitize() {
     try {
+      // Batch sanitizer work to once per animation frame (avoids repeated full-tree scans).
+      let scheduled = false;
+      let pendingRoots = new Set();
+      const scheduleSanitize = (root) => {
+        pendingRoots.add(root || document);
+        if (scheduled) return;
+        scheduled = true;
+        window.requestAnimationFrame(() => {
+          scheduled = false;
+          // sanitize specific roots first
+          pendingRoots.forEach(r => sanitizePostInlineStyles(r));
+          pendingRoots.clear();
+          // then a single document pass as a safety net
+          sanitizePostInlineStyles(document);
+        });
+      };
+
       const observer = new MutationObserver((mutations) => {
-        let seen = false;
         for (const m of mutations) {
-          // sanitize added nodes
           if (m.addedNodes && m.addedNodes.length) {
             m.addedNodes.forEach(node => {
               if (node.nodeType !== Node.ELEMENT_NODE) return;
-              sanitizePostInlineStyles(node);
-              seen = true;
+              scheduleSanitize(node);
             });
           }
-          // sanitize if style attribute changed
           if (m.type === 'attributes' && (m.attributeName === 'style' || m.attributeName === 'class')) {
-            const target = m.target;
-            if (target && (target.matches && (target.matches('.post-content') || target.matches('.post-content-text') || target.closest('.comment-list')))) {
-              sanitizePostInlineStyles(target);
-              seen = true;
-            }
+            scheduleSanitize(m.target);
           }
         }
-        // minor optimization: if we saw updates, also sanitize the whole document area for safety
-        if (seen) sanitizePostInlineStyles(document);
       });
 
       observer.observe(document.documentElement || document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
-
-      // Fallback: periodic sanitize in case some scripts bypass mutation hooks
-      setInterval(() => sanitizePostInlineStyles(document), 3000);
     } catch (e) {
       console.warn('observeAndSanitize error', e);
     }
   }
-
-  // Start observing after DOM ready
-  document.addEventListener('DOMContentLoaded', () => observeAndSanitize());
 
   // Back to top - throttled scroll
   const backToTop = $("#backToTop");
