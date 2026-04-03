@@ -36,12 +36,18 @@
 
         <div class="form-group">
           <label for="password">Heslo</label>
-          <input type="password" id="password" name="password" placeholder="Minimálne 6 znakov" required>
+          <input type="password" id="password" name="password" placeholder="Silné heslo podľa pravidiel nižšie" required minlength="8" autocomplete="new-password">
+          <ul class="muted" style="margin: var(--space-sm) 0 0; padding-left: 1.25rem; font-size: var(--font-size-sm); line-height: 1.5;">
+            <li>aspoň 8 znakov</li>
+            <li>malé a veľké písmeno</li>
+            <li>aspoň jedna číslica</li>
+            <li>aspoň jeden špeciálny znak (napr. ! # ? *)</li>
+          </ul>
         </div>
 
         <div class="form-group">
           <label for="confirm_password">Potvrď heslo</label>
-          <input type="password" id="confirm_password" name="confirm_password" placeholder="Znovu zadaj heslo" required>
+          <input type="password" id="confirm_password" name="confirm_password" placeholder="Znovu zadaj heslo" required minlength="8" autocomplete="new-password">
         </div>
 
         <button type="submit" class="btn btn-primary" style="width: 100%;">Vytvoriť účet</button>

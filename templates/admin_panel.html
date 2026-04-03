@@ -16,7 +16,7 @@
   <div class="admin-panel-section" id="articles-section">
     <h3>Nový článok</h3>
     <p class="muted">Naplň titulok, obsah a pridaj ilustračný obrázok.</p>
-    <form method="post" action="/admin/articles" class="admin-form" enctype="multipart/form-data">
+    <form method="post" action="/admin/articles" class="admin-form" enctype="multipart/form-data" data-async-admin="create-article">
       <label class="admin-field">
         <span>Názov</span>
         <input name="title" placeholder="Ako sa starať o monstera deliciosa" required>
@@ -43,23 +43,38 @@
       </div>
       <button class="btn primary full-width">Pridať článok</button>
     </form>
+
+    <div class="admin-divider"></div>
+
+    <h3>Existujúce články</h3>
+    <p class="muted">Vymaž článok priamo v zozname.</p>
+
+    <div class="admin-post-list" id="articlesList">
+      {% for article in recent_articles %}
+        <form method="post" action="/admin/delete-article" class="admin-post-row" data-async-admin="delete-article">
+          <input type="hidden" name="article_id" value="{{ article.id }}">
+          <div class="admin-post-info">
+            <div class="admin-post-meta">
+              <strong>#{{ article.id }}</strong>
+              <span>{{ article.created_at }}</span>
+            </div>
+            <p>{{ article.title[:140] }}{% if article.title|length > 140 %}&hellip;{% endif %}</p>
+          </div>
+          <button class="btn danger small" type="submit">Vymazať</button>
+        </form>
+      {% else %}
+        <p class="muted small-text">Žiadne články na zobrazenie.</p>
+      {% endfor %}
+    </div>
   </div>
 
   <div class="admin-panel-section hidden" id="posts-section">
     <h3>Správa príspevkov</h3>
-    <p class="muted">Vymaž nevhodné príspevky alebo pridaj ilustračný obrázok.</p>
+    <p class="muted">Vymaž nevhodné príspevky priamo v zozname.</p>
 
-    <form method="post" action="/admin/delete-post" class="admin-form">
-      <label class="admin-field">
-        <span>ID príspevku</span>
-        <input name="post_id" placeholder="123" required>
-      </label>
-      <button class="btn danger">Vymazať príspevok</button>
-    </form>
-
-    <div class="admin-post-list">
+    <div class="admin-post-list" id="postsList">
       {% for post in recent_posts %}
-        <form method="post" action="/admin/delete-post" class="admin-post-row">
+        <form method="post" action="/admin/delete-post" class="admin-post-row" data-async-admin="delete-post">
           <input type="hidden" name="post_id" value="{{ post.id }}">
           <div class="admin-post-info">
             <div class="admin-post-meta">
@@ -77,18 +92,9 @@
     </div>
 
     <div class="admin-divider"></div>
-
-    <h3>Pridať obrázok k príspevku</h3>
-    <form method="post" action="/admin/post-image" class="admin-form">
-      <label class="admin-field">
-        <span>ID príspevku</span>
-        <input name="post_id" placeholder="123" required>
-      </label>
-      <label class="admin-field">
-        <span>Cesta k obrázku</span>
-        <input name="image_path" id="postImage" placeholder="uploads/nazov-suboru.jpg" required>
-      </label>
-      <button class="btn">Pridať obrázok</button>
+    <p class="muted small-text">Nebezpečná zóna: vymaže všetky príspevky vrátane komentárov a lajkov.</p>
+    <form method="post" action="/admin/delete-all-posts" class="admin-form" data-async-admin="delete-all-posts" data-confirm="Naozaj chceš vymazať všetky príspevky? Táto akcia je nevratná.">
+      <button class="btn danger" type="submit">Vymazať všetky príspevky</button>
     </form>
 
     <p class="muted small-text">Novinky sú načítavané automaticky z NewsAPI.org.</p>
@@ -112,7 +118,7 @@
           {% if user.is_admin %}
             <span class="muted small-text">Admin</span>
           {% else %}
-            <form method="post" action="/admin/delete-user">
+            <form method="post" action="/admin/delete-user" data-async-admin="delete-user">
               <input type="hidden" name="user_id" value="{{ user.id }}">
               <button class="btn danger small" type="submit">Vymazať</button>
             </form>
@@ -129,6 +135,8 @@
 <script>
 const adminButtons = document.querySelectorAll('.admin-mode-btn');
 const adminSections = document.querySelectorAll('.admin-panel-section');
+const articlesList = document.getElementById('articlesList');
+const postsList = document.getElementById('postsList');
 
 adminButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -192,6 +200,87 @@ if (articleImageUrl) {
     }
   });
 }
+
+function createArticleRow(article) {
+  const form = document.createElement('form');
+  form.method = 'post';
+  form.action = '/admin/delete-article';
+  form.className = 'admin-post-row';
+  form.setAttribute('data-async-admin', 'delete-article');
+  form.innerHTML = `
+    <input type="hidden" name="article_id" value="${article.id}">
+    <div class="admin-post-info">
+      <div class="admin-post-meta">
+        <strong>#${article.id}</strong>
+        <span>${article.created_at || ''}</span>
+      </div>
+      <p>${(article.title || '').slice(0, 140)}</p>
+    </div>
+    <button class="btn danger small" type="submit">Vymazať</button>
+  `;
+  return form;
+}
+
+async function submitAdminForm(event) {
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement)) return;
+  const actionType = form.getAttribute('data-async-admin');
+  if (!actionType) return;
+
+  event.preventDefault();
+
+  const confirmMessage = form.getAttribute('data-confirm');
+  if (confirmMessage && !window.confirm(confirmMessage)) return;
+
+  const submitButton = form.querySelector('button[type="submit"], button:not([type])');
+  if (submitButton) submitButton.disabled = true;
+
+  try {
+    const response = await fetch(form.action, {
+      method: (form.method || 'POST').toUpperCase(),
+      body: new FormData(form),
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+    });
+
+    let payload = {};
+    try {
+      payload = await response.json();
+    } catch (_) {
+      payload = {};
+    }
+
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.error || 'Akcia zlyhala.');
+    }
+
+    if (actionType === 'delete-article' || actionType === 'delete-post') {
+      const row = form.closest('.admin-post-row');
+      if (row) row.remove();
+    } else if (actionType === 'delete-user') {
+      const row = form.closest('.admin-post-row');
+      if (row) row.remove();
+    } else if (actionType === 'delete-all-posts') {
+      if (postsList) {
+        postsList.innerHTML = '<p class="muted small-text">Žiadne príspevky na zobrazenie.</p>';
+      }
+    } else if (actionType === 'create-article') {
+      form.reset();
+      setPreview(null);
+      if (articlesList && payload.article) {
+        const empty = articlesList.querySelector('.muted.small-text');
+        if (empty) empty.remove();
+        articlesList.prepend(createArticleRow(payload.article));
+      }
+    }
+  } catch (error) {
+    window.alert(error.message || 'Akcia zlyhala.');
+  } finally {
+    if (submitButton) submitButton.disabled = false;
+  }
+}
+
+document.addEventListener('submit', submitAdminForm);
 </script>
 {% endblock %}
 

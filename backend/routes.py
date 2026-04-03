@@ -2,6 +2,7 @@ from flask import render_template, request, redirect, url_for, jsonify, session,
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from datetime import datetime
 import os
+import string
 
 from .database import get_db
 from .user import User
@@ -23,6 +24,21 @@ def load_user(user_id):
     return User.get_by_id(user_id)
 
 
+def validate_registration_password(password: str):
+    """Require length and mixed character classes. Returns (ok, error_message)."""
+    if len(password) < 8:
+        return False, "Heslo musí mať aspoň 8 znakov."
+    if not any(c.islower() for c in password):
+        return False, "Heslo musí obsahovať aspoň jedno malé písmeno."
+    if not any(c.isupper() for c in password):
+        return False, "Heslo musí obsahovať aspoň jedno veľké písmeno."
+    if not any(c.isdigit() for c in password):
+        return False, "Heslo musí obsahovať aspoň jednu číslicu."
+    if not any(c in string.punctuation for c in password):
+        return False, "Heslo musí obsahovať aspoň jeden špeciálny znak (napr. ! ? # *)."
+    return True, ""
+
+
 def register_routes(app):
     login_manager.init_app(app)
     app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
@@ -33,6 +49,9 @@ def register_routes(app):
     
     upload_dir = app.config['UPLOAD_FOLDER']
     os.makedirs(upload_dir, exist_ok=True)
+
+    def is_ajax_request():
+        return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
     # Authentication Routes
     @app.route("/login", methods=["GET", "POST"])
@@ -73,8 +92,9 @@ def register_routes(app):
             if password != confirm_password:
                 return render_template("register.html", error="Heslá sa nezhodujú")
             
-            if len(password) < 6:
-                return render_template("register.html", error="Heslo musí mať najmenej 6 znakov")
+            ok_pw, pw_msg = validate_registration_password(password)
+            if not ok_pw:
+                return render_template("register.html", error=pw_msg)
             
             if User.get_by_username(username):
                 return render_template("register.html", error="Používateľské meno už existuje")
@@ -823,7 +843,19 @@ def register_routes(app):
             }
             for u in user_rows
         ]
-        return render_template('admin_panel.html', recent_posts=recent_posts, users=users)
+        article_rows = db.execute(
+            "SELECT id, title, content, created_at FROM articles ORDER BY created_at DESC LIMIT 50"
+        ).fetchall()
+        recent_articles = [
+            {"id": r[0], "title": r[1], "content": r[2], "created_at": r[3]}
+            for r in article_rows
+        ]
+        return render_template(
+            'admin_panel.html',
+            recent_posts=recent_posts,
+            users=users,
+            recent_articles=recent_articles,
+        )
 
     @app.route('/admin/upload', methods=['POST'])
     def admin_upload():
@@ -840,6 +872,8 @@ def register_routes(app):
     @app.route('/admin/articles', methods=['POST'])
     def admin_add_article():
         if not session.get('is_admin'):
+            if is_ajax_request():
+                return jsonify({"ok": False, "error": "Unauthorized"}), 403
             return redirect(url_for('admin_login'))
         title = (request.form.get('title') or '').strip()
         content = (request.form.get('content') or '').strip()
@@ -851,36 +885,97 @@ def register_routes(app):
             if uploaded:
                 image_path = uploaded
         if not title or not content:
+            if is_ajax_request():
+                return jsonify({"ok": False, "error": "Title and content are required"}), 400
             return redirect(url_for('admin_panel'))
         db = get_db()
-        db.execute("INSERT INTO articles(title, content, image_path) VALUES(?,?,?)", (title, content, image_path))
+        cur = db.execute("INSERT INTO articles(title, content, image_path) VALUES(?,?,?)", (title, content, image_path))
         db.commit()
+        if is_ajax_request():
+            created = db.execute(
+                "SELECT id, title, content, created_at FROM articles WHERE id=?",
+                (cur.lastrowid,),
+            ).fetchone()
+            return jsonify({
+                "ok": True,
+                "article": {
+                    "id": created["id"],
+                    "title": created["title"],
+                    "content": created["content"],
+                    "created_at": created["created_at"],
+                }
+            }), 201
         return redirect(url_for('articles'))
+
+    @app.route('/admin/delete-article', methods=['POST'])
+    def admin_delete_article():
+        if not session.get('is_admin'):
+            if is_ajax_request():
+                return jsonify({"ok": False, "error": "Unauthorized"}), 403
+            return redirect(url_for('admin_login'))
+        article_id = request.form.get('article_id')
+        try:
+            article_id = int(article_id)
+        except (TypeError, ValueError):
+            if is_ajax_request():
+                return jsonify({"ok": False, "error": "Invalid article id"}), 400
+            return redirect(url_for('admin_panel'))
+        db = get_db()
+        db.execute("DELETE FROM articles WHERE id=?", (article_id,))
+        db.commit()
+        if is_ajax_request():
+            return jsonify({"ok": True, "deleted_article_id": article_id})
+        return redirect(url_for('admin_panel'))
 
     @app.route('/admin/delete-post', methods=['POST'])
     def admin_delete_post():
         if not session.get('is_admin'):
+            if is_ajax_request():
+                return jsonify({"ok": False, "error": "Unauthorized"}), 403
             return redirect(url_for('admin_login'))
         post_id = request.form.get('post_id')
         try:
             post_id = int(post_id)
         except (TypeError, ValueError):
+            if is_ajax_request():
+                return jsonify({"ok": False, "error": "Invalid post id"}), 400
             return redirect(url_for('admin_panel'))
         db = get_db()
         db.execute("DELETE FROM comments WHERE post_id=?", (post_id,))
         db.execute("DELETE FROM likes WHERE post_id=?", (post_id,))
         db.execute("DELETE FROM posts WHERE id=?", (post_id,))
         db.commit()
+        if is_ajax_request():
+            return jsonify({"ok": True, "deleted_post_id": post_id})
+        return redirect(url_for('admin_panel'))
+
+    @app.route('/admin/delete-all-posts', methods=['POST'])
+    def admin_delete_all_posts():
+        if not session.get('is_admin'):
+            if is_ajax_request():
+                return jsonify({"ok": False, "error": "Unauthorized"}), 403
+            return redirect(url_for('admin_login'))
+        db = get_db()
+        db.execute("DELETE FROM comments")
+        db.execute("DELETE FROM likes")
+        db.execute("DELETE FROM posts")
+        db.commit()
+        if is_ajax_request():
+            return jsonify({"ok": True})
         return redirect(url_for('admin_panel'))
 
     @app.route('/admin/delete-user', methods=['POST'])
     def admin_delete_user():
         if not session.get('is_admin'):
+            if is_ajax_request():
+                return jsonify({"ok": False, "error": "Unauthorized"}), 403
             return redirect(url_for('admin_login'))
         user_id = request.form.get('user_id')
         try:
             user_id = int(user_id)
         except (TypeError, ValueError):
+            if is_ajax_request():
+                return jsonify({"ok": False, "error": "Invalid user id"}), 400
             return redirect(url_for('admin_panel'))
 
         db = get_db()
@@ -891,6 +986,8 @@ def register_routes(app):
 
         # Prevent deleting missing or admin accounts
         if not user or user["is_admin"]:
+            if is_ajax_request():
+                return jsonify({"ok": False, "error": "User cannot be deleted"}), 400
             return redirect(url_for('admin_panel'))
 
         # Clean up related content before removing the user entry
@@ -901,6 +998,8 @@ def register_routes(app):
         db.execute("DELETE FROM chat_messages WHERE user_id=?", (user_id,))
         db.execute("DELETE FROM users WHERE id=?", (user_id,))
         db.commit()
+        if is_ajax_request():
+            return jsonify({"ok": True, "deleted_user_id": user_id})
         return redirect(url_for('admin_panel'))
 
     @app.route('/admin/news', methods=['POST'])
@@ -908,15 +1007,3 @@ def register_routes(app):
         # Manual news creation is disabled; live news are fetched from NewsAPI
         return render_template('404.html'), 404
 
-    @app.route('/admin/post-image', methods=['POST'])
-    def admin_add_post_image():
-        if not session.get('is_admin'):
-            return redirect(url_for('admin_login'))
-        post_id = request.form.get('post_id')
-        image_path = request.form.get('image_path')
-        if not post_id or not image_path:
-            return redirect(url_for('admin_panel'))
-        db = get_db()
-        db.execute("UPDATE posts SET image_path=? WHERE id=?", (image_path, post_id))
-        db.commit()
-        return redirect(url_for('posts_page'))

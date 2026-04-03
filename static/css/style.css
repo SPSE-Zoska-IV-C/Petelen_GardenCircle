@@ -1162,6 +1162,8 @@ textarea {
   border-radius: var(--radius-xl);
   margin: var(--space-lg) 0;
   object-fit: cover;
+  image-rendering: auto;
+  -ms-interpolation-mode: bicubic;
   box-shadow: var(--shadow-md);
 }
 
@@ -1438,10 +1440,14 @@ textarea {
   display: block;
   transition: transform 0.4s ease;
   background: var(--light-green);
+  image-rendering: auto;
+  -ms-interpolation-mode: bicubic;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .article-card:hover img {
-  transform: scale(1.05);
+  transform: scale(1.02) translateZ(0);
 }
 
 .article-card .content {
@@ -1551,6 +1557,8 @@ textarea {
   width: 100%;
   display: block;
   object-fit: cover;
+  image-rendering: auto;
+  -ms-interpolation-mode: bicubic;
 }
 
 .article-detail-body {
@@ -2316,10 +2324,12 @@ textarea {
   background: rgba(247, 253, 251, 0.95);
 }
 
+/* Two columns on wide screens without CSS Grid "rows": multicol lets each column stack independently */
 .post-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-xl);
+  display: block;
+  column-count: 1;
+  column-gap: var(--space-xl);
+  column-fill: balance;
   margin: 0;
   padding: 0;
   width: 100%;
@@ -2327,16 +2337,17 @@ textarea {
 
 @media (min-width: 768px) {
   .post-list {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-xl);
+    column-count: 2;
   }
 }
 
-@media (min-width: 1200px) {
-  .post-list {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-xl);
-  }
+.post-list > .post-card-modern {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  margin-bottom: var(--space-xl);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .post-card-modern {
@@ -2350,7 +2361,8 @@ textarea {
   will-change: transform;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 0;
+  width: 100%;
 }
 .post-card-modern:hover {
   transform: translateY(-2px);
@@ -2422,7 +2434,7 @@ textarea {
   color: inherit;
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
 }
 
@@ -2449,27 +2461,35 @@ textarea {
 }
 
 
+/* Feed / list: one fixed visual slot; large photos are cropped, layout stays stable */
 .post-image-wrapper {
   width: 100%;
+  margin-top: var(--space-md);
+  flex-shrink: 0;
+  min-height: 0;
+  height: clamp(140px, 28vw, 240px);
+  max-height: 240px;
   overflow: hidden;
-  margin-top: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: rgba(15, 40, 30, 0.06);
 }
 
 .post-image {
   width: 100%;
-  height: auto;
-  max-height: 600px;
+  height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
   transition: var(--transition);
+  image-rendering: auto;
+  -ms-interpolation-mode: bicubic;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .post-card-modern:hover .post-image {
-  transform: scale(1.01);
-}
-
-.post-image {
-  will-change: transform;
+  transform: scale(1.005) translateZ(0);
 }
 
 .post-actions-modern {
@@ -2479,7 +2499,7 @@ textarea {
   padding: var(--space-lg) var(--space-xl);
   border-top: 1px solid rgba(22, 160, 133, 0.2);
   background: rgba(212, 244, 231, 0.5);
-  margin-top: auto;
+  margin-top: 0;
   flex-shrink: 0;
 }
 
@@ -2619,11 +2639,11 @@ textarea {
   }
 
   .post-list {
-    grid-template-columns: 1fr;
-    gap: var(--space-lg);
-    margin: 0;
-    padding: 0;
-    width: 100%;
+    column-gap: var(--space-lg);
+  }
+
+  .post-list > .post-card-modern {
+    margin-bottom: var(--space-lg);
   }
 
   .post-form-actions {
