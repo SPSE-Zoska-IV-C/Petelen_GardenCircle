@@ -8,26 +8,53 @@ import feedparser
 _CACHE: Dict[str, object] = {"data": None, "ts": 0.0}
 
 
+def _pick_best_image(items: list[dict]) -> Optional[str]:
+    """Return highest-resolution candidate from feed metadata."""
+    best_url: Optional[str] = None
+    best_score = -1
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        url = item.get("url") or item.get("href")
+        if not url:
+            continue
+        width = item.get("width") or item.get("w") or 0
+        height = item.get("height") or item.get("h") or 0
+        try:
+            width = int(width)
+        except (TypeError, ValueError):
+            width = 0
+        try:
+            height = int(height)
+        except (TypeError, ValueError):
+            height = 0
+        score = width * height
+        if score > best_score:
+            best_score = score
+            best_url = url
+        elif best_score <= 0 and best_url is None:
+            # Fallback for feeds that do not provide dimensions.
+            best_url = url
+    return best_url
+
+
 def _extract_image(entry: dict) -> Optional[str]:
-    # Try media_thumbnail
-    thumbnails = entry.get("media_thumbnail") or entry.get("media_thumbnail", [])
-    if isinstance(thumbnails, list) and thumbnails:
-        url = thumbnails[0].get("url")
-        if url:
-            return url
-    # Try media_content/enclosures
+    # Prefer full-size media first to avoid pixelated thumbnails.
     media_content = entry.get("media_content") or []
     if isinstance(media_content, list):
-        for m in media_content:
-            url = m.get("url")
-            if url:
-                return url
+        best = _pick_best_image(media_content)
+        if best:
+            return best
+
     enclosures = entry.get("enclosures") or []
     if isinstance(enclosures, list):
-        for e in enclosures:
-            url = e.get("href") or e.get("url")
-            if url:
-                return url
+        best = _pick_best_image(enclosures)
+        if best:
+            return best
+
+    thumbnails = entry.get("media_thumbnail") or []
+    if isinstance(thumbnails, list):
+        return _pick_best_image(thumbnails)
     return None
 
 

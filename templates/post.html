@@ -30,7 +30,7 @@
         {{ post.content }}
       </div>
       {% if post.image_path %}
-        <img src="{{ url_for('static', filename=post.image_path) }}" alt="Obrázok príspevku" loading="lazy">
+        <img src="{{ url_for('static', filename=post.image_path) }}" alt="Obrázok príspevku" class="post-main-image" loading="lazy">
       {% endif %}
       <div class="post-actions" style="display:flex; align-items:center; gap:.5rem; margin-top:.5rem;">
         <button id="likeBtn" class="btn btn-ghost like-btn {{ 'liked' if post.liked else '' }}" data-post-id="{{ post.id }}" aria-label="Páči sa mi to">

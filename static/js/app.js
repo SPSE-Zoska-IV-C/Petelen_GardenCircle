@@ -428,25 +428,6 @@
     });
   }
 
-  // Articles on home page (optional)
-  const articlesContainer = $("#articlesContainer");
-  if (articlesContainer) {
-    fetch('/static/articles.json')
-      .then(r => r.json())
-      .then(data => {
-        articlesContainer.innerHTML = '';
-        data.forEach(a => {
-          const d = document.createElement('article');
-          d.className = 'article-card';
-          d.innerHTML = `<h3>${escapeHTML(a.title)}</h3><p>${escapeHTML(a.content)}</p>`;
-          articlesContainer.appendChild(d);
-        })
-      })
-      .catch(() => {
-        articlesContainer.innerHTML = "<p class='muted'>Nepodarilo sa načítať články.</p>";
-      });
-  }
-
   // Only load posts if using dynamic rendering (not if posts are already rendered server-side)
   if (postList && postTemplate && postList.querySelectorAll('.post-card, .post-card-modern').length === 0) {
     loadPosts();

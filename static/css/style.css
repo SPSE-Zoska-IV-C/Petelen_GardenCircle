@@ -187,6 +187,22 @@
   color: var(--primary-green);
 }
 
+/* Keep CTA buttons readable in dark mode (override generic link color). */
+[data-theme="dark"] a.btn-primary,
+[data-theme="dark"] .btn.btn-primary {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background: linear-gradient(135deg, #119a73 0%, #17b88b 55%, #26c56e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="dark"] a.btn-primary:hover,
+[data-theme="dark"] .btn.btn-primary:hover {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  filter: brightness(1.05);
+}
+
 [data-theme="dark"] .muted {
   color: var(--text-muted);
 }
@@ -1175,7 +1191,7 @@ textarea {
 }
 
 .post-detail-card {
-  max-width: 920px;
+  max-width: 700px;
   margin: 0 auto;
   padding: var(--space-xl);
   display: flex;
@@ -1192,12 +1208,18 @@ textarea {
   background: var(--card);
 }
 
-.post-detail-card .post-card img {
+.post-detail-card .post-card .post-main-image {
   border-radius: var(--radius-2xl);
-  max-height: 460px;
-  width: 100%;
-  object-fit: cover;
+  max-height: min(86vh, 980px);
+  width: min(92vw, 1100px);
+  max-width: none;
+  height: auto;
+  object-fit: contain;
   margin: var(--space-md) 0;
+  display: block;
+  margin-left: 50%;
+  margin-right: 0;
+  transform: translateX(-50%);
 }
 
 .post-detail-card .post-content {
@@ -1445,8 +1467,9 @@ textarea {
 
 .article-card img {
   width: 100%;
-  height: 220px;
-  object-fit: cover;
+  height: auto;
+  max-height: 360px;
+  object-fit: contain;
   display: block;
   transition: transform 0.4s ease;
   background: var(--light-green);
@@ -2473,23 +2496,27 @@ textarea {
 }
 
 
-/* Feed / list: one fixed visual slot; large photos are cropped, layout stays stable */
+/* Feed/list: keep image quality, avoid forced upscaling */
 .post-image-wrapper {
   width: 100%;
   margin-top: var(--space-md);
   flex-shrink: 0;
   min-height: 0;
-  height: clamp(140px, 28vw, 240px);
-  max-height: 240px;
+  max-height: 420px;
   overflow: hidden;
   border-radius: var(--radius-lg);
   background: rgba(15, 40, 30, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .post-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 420px;
+  object-fit: contain;
   object-position: center;
   display: block;
   transition: var(--transition);
@@ -2977,7 +3004,7 @@ textarea {
   }
 
   .article-card img {
-    height: 180px;
+    max-height: 260px;
   }
 
   /* Mobile Feature Grid */
