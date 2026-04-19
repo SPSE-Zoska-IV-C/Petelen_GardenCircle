@@ -889,6 +889,11 @@ main {
   justify-content: center;
 }
 
+/* Login/Register: space between form fields and submit button */
+.auth-submit-btn {
+  margin-top: var(--space-lg);
+}
+
 .btn.small {
   padding: 0.25rem 0.5rem;
   font-size: 0.875rem;
