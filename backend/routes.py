@@ -15,6 +15,25 @@ try:
 except ImportError:
     GEMINI_AVAILABLE = False
 
+# Admin panel gate: `is_admin` alone persisted across user switches; bind unlock to app user when logged in.
+_ADMIN_UNLOCKED_UID_KEY = "admin_unlocked_uid"
+
+
+def _clear_admin_gate_session():
+    session.pop("is_admin", None)
+    session.pop(_ADMIN_UNLOCKED_UID_KEY, None)
+
+
+def _admin_gate_ok():
+    if not session.get("is_admin"):
+        return False
+    if current_user.is_authenticated:
+        if session.get(_ADMIN_UNLOCKED_UID_KEY) != current_user.id:
+            _clear_admin_gate_session()
+            return False
+    return True
+
+
 login_manager = LoginManager()
 login_manager.login_view = 'login'
 
@@ -69,6 +88,7 @@ def register_routes(app):
             user = User.get_by_username(username)
             if user and user.check_password(password):
                 login_user(user)
+                _clear_admin_gate_session()
                 return redirect(url_for('posts_page'))
             else:
                 return render_template("login.html", error="Nesprávne prihlasovacie údaje")
@@ -106,6 +126,7 @@ def register_routes(app):
             if user_id:
                 user = User.get_by_id(user_id)
                 login_user(user)
+                _clear_admin_gate_session()
                 return redirect(url_for('posts_page'))
             else:
                 return render_template("register.html", error="Registrácia zlyhala")
@@ -114,6 +135,7 @@ def register_routes(app):
 
     @app.route("/logout")
     def logout():
+        _clear_admin_gate_session()
         logout_user()
         return redirect(url_for('login'))
 
@@ -676,8 +698,7 @@ def register_routes(app):
             # Configure Gemini API
             genai.configure(api_key=api_key)
             
-            # Try different model names - use available gemini-2.5 models
-            # Try models in order of preference (stable versions first, then preview)
+            
             model_names = [
                 'gemini-2.5-flash',  # Stable flash version (fastest)
                 'gemini-2.5-pro-preview-05-06',  # Latest pro preview
@@ -802,18 +823,22 @@ def register_routes(app):
             pw = (request.form.get('password') or '').strip()
             if pw == 'admin':
                 session['is_admin'] = True
+                if current_user.is_authenticated:
+                    session[_ADMIN_UNLOCKED_UID_KEY] = current_user.id
+                else:
+                    session.pop(_ADMIN_UNLOCKED_UID_KEY, None)
                 return redirect(url_for('admin_panel'))
             return render_template('admin_login.html', error='Nesprávne heslo')
         return render_template('admin_login.html')
 
     @app.route('/admin/logout')
     def admin_logout():
-        session.pop('is_admin', None)
+        _clear_admin_gate_session()
         return redirect(url_for('home'))
 
     @app.route('/admin')
     def admin_panel():
-        if not session.get('is_admin'):
+        if not _admin_gate_ok():
             return redirect(url_for('admin_login'))
         db = get_db()
         rows = db.execute(
@@ -859,7 +884,7 @@ def register_routes(app):
 
     @app.route('/admin/upload', methods=['POST'])
     def admin_upload():
-        if not session.get('is_admin'):
+        if not _admin_gate_ok():
             return redirect(url_for('admin_login'))
         f = request.files.get('image')
         if not f:
@@ -871,7 +896,7 @@ def register_routes(app):
 
     @app.route('/admin/articles', methods=['POST'])
     def admin_add_article():
-        if not session.get('is_admin'):
+        if not _admin_gate_ok():
             if is_ajax_request():
                 return jsonify({"ok": False, "error": "Unauthorized"}), 403
             return redirect(url_for('admin_login'))
@@ -909,7 +934,7 @@ def register_routes(app):
 
     @app.route('/admin/delete-article', methods=['POST'])
     def admin_delete_article():
-        if not session.get('is_admin'):
+        if not _admin_gate_ok():
             if is_ajax_request():
                 return jsonify({"ok": False, "error": "Unauthorized"}), 403
             return redirect(url_for('admin_login'))
@@ -929,7 +954,7 @@ def register_routes(app):
 
     @app.route('/admin/delete-post', methods=['POST'])
     def admin_delete_post():
-        if not session.get('is_admin'):
+        if not _admin_gate_ok():
             if is_ajax_request():
                 return jsonify({"ok": False, "error": "Unauthorized"}), 403
             return redirect(url_for('admin_login'))
@@ -951,7 +976,7 @@ def register_routes(app):
 
     @app.route('/admin/delete-all-posts', methods=['POST'])
     def admin_delete_all_posts():
-        if not session.get('is_admin'):
+        if not _admin_gate_ok():
             if is_ajax_request():
                 return jsonify({"ok": False, "error": "Unauthorized"}), 403
             return redirect(url_for('admin_login'))
@@ -966,7 +991,7 @@ def register_routes(app):
 
     @app.route('/admin/delete-user', methods=['POST'])
     def admin_delete_user():
-        if not session.get('is_admin'):
+        if not _admin_gate_ok():
             if is_ajax_request():
                 return jsonify({"ok": False, "error": "Unauthorized"}), 403
             return redirect(url_for('admin_login'))

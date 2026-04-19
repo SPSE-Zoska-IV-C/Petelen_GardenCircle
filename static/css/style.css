@@ -1467,9 +1467,8 @@ textarea {
 
 .article-card img {
   width: 100%;
-  height: auto;
-  max-height: 360px;
-  object-fit: contain;
+  height: 240px;
+  object-fit: cover;
   display: block;
   transition: transform 0.4s ease;
   background: var(--light-green);
@@ -1477,6 +1476,12 @@ textarea {
   -ms-interpolation-mode: bicubic;
   backface-visibility: hidden;
   transform: translateZ(0);
+}
+
+.article-card-image--placeholder {
+  object-fit: contain;
+  background: var(--surface);
+  padding: .5rem;
 }
 
 .article-card:hover img {
@@ -3004,7 +3009,7 @@ textarea {
   }
 
   .article-card img {
-    max-height: 260px;
+    height: 220px;
   }
 
   /* Mobile Feature Grid */

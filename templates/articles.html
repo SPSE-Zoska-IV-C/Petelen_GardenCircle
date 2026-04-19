@@ -25,9 +25,9 @@
         <article class="article-card fade-in">
           <a href="{{ url_for('article_detail', article_id=a.id) }}" class="article-card-link" aria-label="Článok {{ a.title }}">
             {% if resolved_src %}
-              <img src="{{ resolved_src }}" alt="{{ a.title }}" loading="lazy">
+              <img class="article-card-image" src="{{ resolved_src }}" alt="{{ a.title }}" loading="lazy">
             {% else %}
-              <img src="{{ url_for('static', filename='img/leaf.svg') }}" alt="{{ a.title }}" loading="lazy" style="background: var(--surface); border-radius: .5rem; padding: .35rem;">
+              <img class="article-card-image article-card-image--placeholder" src="{{ url_for('static', filename='img/leaf.svg') }}" alt="{{ a.title }}" loading="lazy">
             {% endif %}
             <div class="content">
               <h3>{{ a.title }}</h3>
